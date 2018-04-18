@@ -30,6 +30,8 @@ local concat = table.concat
 local maxlen = table.maxn 
 local format = string.format 
 local random = math.random 
+local floor  = math.floor 
+local abs    = math.abs 
 -------------------------------------------------------------------------------
 math.randomseed(os.time())
 -------------------------------------------------------------------------------
@@ -53,6 +55,9 @@ local mt = nil
 -------------------------------------------------------------------------------
 -- operators (use these with map, reduce, each, ecc..)
 -------------------------------------------------------------------------------
+function Table.void()
+end
+
 function Table.odd(a)
 	return a % 2 == 1
 end
@@ -69,8 +74,20 @@ end
 
 -- square_root
 
+function Table.abs(a)
+   return abs(a)
+end
+
 function Table.double(a)
 	return a * 2
+end
+
+function Table.positive(a)
+   return a >= 0
+end
+
+function Table.negative(a)
+   return a < 0
 end
 
 function Table.asc_compare(a, b)
@@ -139,7 +156,17 @@ local function each(table, func)
 		func(table[i])
 	end
 
-	return setmetatable(table, mt)
+	return Table(table)
+end
+
+local function eachKeys(table, func)
+	-- apply the given function on all (key, value) pairs of table
+
+	for k, v in pairs(table) do
+		func(k, v)
+	end
+
+	return Table(table)
 end
 
 --[[
@@ -162,7 +189,7 @@ local function map(table, transform)
 		map[i] = transform(table[i])
 	end
 
-	return setmetatable(map, mt)
+	return Table(map)
 end
 
 local function filter(table, criteria)
@@ -179,7 +206,7 @@ local function filter(table, criteria)
 		end
 	end
 
-	return setmetatable(set, mt)
+	return Table(set)
 end
 
 local function reject(table, criteria)
@@ -196,7 +223,7 @@ local function reject(table, criteria)
 		end
 	end
 
-	return setmetatable(set, mt)
+	return Table(set)
 end
 
 local function reduce(table, base, reduction)
@@ -278,7 +305,46 @@ local function shuffle(table)
 		table[i], table[index] = table[index], table[i]		
 	end
 
-	return setmetatable(table, mt)
+	return Table(table)
+end
+
+local function keys(table)
+	-- return a table of keys
+	local keys = {}
+	local i = 1
+
+	for k, _ in pairs(table) do
+		keys[i] = k
+		i = i + 1
+	end
+
+	return Table(keys)
+end
+
+local function values(table)
+	-- return a table of values
+	local values = {}
+
+	for i, v in ipairs(table) do
+		values[i] = v
+	end
+
+	return Table(values)
+end
+
+local function reverse(table)
+	-- return a table which values are in opposite order
+	local n = floor(#table * .5)
+
+	for i = 1, n do
+      local k = n - i + 1
+		local x = table[i]
+		local y = table[k]
+
+		table[i], table[k] = y, x
+	end
+
+	return Table(table)
 end
 
 local function pack(...)
@@ -306,10 +372,6 @@ local function pack2(...)
 	return Table(data)
 end
 
--- keys
-
--- values
-
 local function tostring(table)
 	local len = #table
 	local buf = { "Table [" }
@@ -336,20 +398,30 @@ end
 -------------------------------------------------------------------------------
 mt = {
 	__index = {
+		-- functional
 		map = map,
-		max = max,
-		min = min,
-		sum = sum,
-		each = each,
-		step = step,
-		pack = pack,
-		pack2 = pack2,
-		range = range,
-		sample = sample,
 		filter = filter,
 		reject = reject,
 		reduce = reduce,
+
+		-- iterators
+		iter = iter,
+		each = each,
+		step = step,
+		range = range,
+		eachKeys = eachKeys,
+
+		-- table utils
+		max = max,
+		min = min,
+		sum = sum,
+		keys = keys,
+		pack = pack,
+		pack2 = pack2,
+		values = values,
+		sample = sample,
 		shuffle = shuffle,
+		reverse = reverse,
 	},
 
 	__tostring = tostring,
