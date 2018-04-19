@@ -3,7 +3,6 @@ version = "0.1"
 
 source  = {
 	url = "git://github.com/Luca96/lua-table",
-	tag = "v0.1",
 }
 
 description = {
@@ -28,5 +27,4 @@ build = {
     modules = {
         luatable = "src/luatable.lua",
     },
-    --copy_directories = { "doc", "test" }
 }
