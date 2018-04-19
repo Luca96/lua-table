@@ -26,12 +26,14 @@ local setmetatable = setmetatable
 local assert = assert 
 local select = select 
 local insert = table.insert 
+local remove = table.remove 
 local concat = table.concat 
 local maxlen = table.maxn 
 local format = string.format 
 local random = math.random 
 local floor  = math.floor 
 local abs    = math.abs 
+local type   = type 
 -------------------------------------------------------------------------------
 math.randomseed(os.time())
 -------------------------------------------------------------------------------
@@ -237,6 +239,60 @@ local function reduce(table, base, reduction)
 
 	return value --TODO: wrap into a table and apply mt??
 end
+
+local function flatten(table)
+   -- flattens a nested table (over int indexes)
+   local t = {}
+   local k = 1
+   local q = { table }
+   local n = 1
+
+   while n > 0 do
+      local item = remove(q, n)
+      n = n - 1
+      local l = #item      
+
+      for i = 1, l do
+         local v = item[i]
+
+         if type(v) == "table" then
+         	n = n + 1
+            insert(q, n, v)
+         else
+            t[k] = v
+            k = k + 1
+         end
+      end
+   end
+
+   return Table(t)
+end
+
+local function flatten2(table)
+	-- flattens a nested table (over all key-value pairs)
+	local t = {}
+   local k = 1
+   local q = { table }
+   local n = 1
+
+   while n > 0 do
+      local item = remove(q, n)
+      n = n - 1
+
+      for _, v in pairs(item) do
+
+         if type(v) == "table" then
+         	n = n + 1
+            insert(q, n, v)
+         else
+            t[k] = v
+            k = k + 1
+         end
+      end
+   end
+
+   return Table(t)
+end
 -------------------------------------------------------------------------------
 -- Table utils
 -------------------------------------------------------------------------------
@@ -300,9 +356,9 @@ local function shuffle(table)
 	local len = #table
 
 	for i = 1, len do
-		local index = random(len)
+		local k = random(len)
 
-		table[i], table[index] = table[index], table[i]		
+		table[i], table[k] = table[k], table[i]
 	end
 
 	return Table(table)
@@ -345,6 +401,17 @@ local function reverse(table)
 	end
 
 	return Table(table)
+end
+
+local function copy(table)
+	-- copy each key-value of the input table
+	local clone = {}
+
+	for k, v in pairs(table) do
+		clone[k] = v
+	end
+
+	return Table(clone)
 end
 
 local function pack(...)
@@ -403,6 +470,8 @@ mt = {
 		filter = filter,
 		reject = reject,
 		reduce = reduce,
+      	flatten  = flatten,
+      	flatten2 = flatten2,
 
 		-- iterators
 		iter = iter,
@@ -416,6 +485,7 @@ mt = {
 		min = min,
 		sum = sum,
 		keys = keys,
+		copy = copy,
 		pack = pack,
 		pack2 = pack2,
 		values = values,
