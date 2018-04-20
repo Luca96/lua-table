@@ -557,7 +557,7 @@ mt = {
     },
 
     __tostring = tostring,
-    __call = init2,
+    __call = init,
 }
 -------------------------------------------------------------------------------
 return setmetatable(Table, mt)
