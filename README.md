@@ -35,8 +35,8 @@ end)
 -- avoid negative values
 local subset = t:reject(Table.negative)
 
---find the max value from a list of doubled odd values
-local max = t:filter(Table.odd):map(Table.double):max() 
+--find the max value from a subtable of doubled odd values
+local max = t:accept(Table.odd):map(Table.double):max() 
 
 -- table utils
 -------------------------

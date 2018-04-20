@@ -15,7 +15,7 @@ description = {
 			- iterators: range, step, iter, each, ...
 	]],
 	homepage = "https://github.com/Luca96/lua-table",
-	license = "MIT/X11",
+	license = "MIT",
 }
 
 dependencies = {

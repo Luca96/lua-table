@@ -37,20 +37,40 @@ local type   = type
 -------------------------------------------------------------------------------
 math.randomseed(os.time())
 -------------------------------------------------------------------------------
+-- assertions / warnings
+-------------------------------------------------------------------------------
+local function assert_init(t)
+    assert(type(t) == "table", 
+        format("[Table.init()] optional parameter <table> must be a not-nil table!", msg))
+end
+
+local function assert_table(msg, t)
+    assert(type(t) == "table", 
+        format("[Table.%s()] parameter <table> must be a not-nil table!", msg))
+end
+
+local function assert_table_func(msg, t, f)
+    assert(type(t) == "table", 
+        format("[Table.%s()] require a not-nil table!", msg))
+
+    assert(type(f) == "function", 
+        format("[Table.%s()] require a not-nil function!", msg))
+end
+-------------------------------------------------------------------------------
 -- LuaTable: lua tables with steroids
 -------------------------------------------------------------------------------
 local Table = {
-	__VERSION = "0.1",
-	__AUTHOR  = "Luca Anzalone",
+    __VERSION = "0.1",
+    __AUTHOR  = "Luca Anzalone",
 }
 
 function Table.methods()
-	-- print all module methods name
-	local t = getmetatable(Table).__index
+    -- print all module methods name
+    local t = getmetatable(Table).__index
 
-	for k, _ in pairs(t) do
-		print(k)
-	end
+    for k, _ in pairs(t) do
+        print(k)
+    end
 end
 
 local mt = nil
@@ -61,15 +81,15 @@ function Table.void()
 end
 
 function Table.odd(a)
-	return a % 2 == 1
+    return a % 2 == 1
 end
 
 function Table.even(a)
-	return a % 2 == 0
+    return a % 2 == 0
 end
 
 function Table.half(a)
-	return a * .5
+    return a * .5
 end
 
 -- square
@@ -81,7 +101,7 @@ function Table.abs(a)
 end
 
 function Table.double(a)
-	return a * 2
+    return a * 2
 end
 
 function Table.positive(a)
@@ -93,203 +113,217 @@ function Table.negative(a)
 end
 
 function Table.asc_compare(a, b)
-	return a >= b
+    return a >= b
 end
 
 function Table.dsc_compare(a, b)
-	return a <= b
+    return a <= b
 end
 -------------------------------------------------------------------------------
 -- Iterator and for-each
 -------------------------------------------------------------------------------
 local function iter(table)
-	-- build an iterator over the given table
-	local i = 1
+    -- build an iterator over the given table
+    assert_table("iter", table)
 
-	return function()
-		local v = table[i]
-		i = i + 1
+    local i = 1
 
-		return v
-	end
+    return function()
+        local v = table[i]
+        i = i + 1
+
+        return v
+    end
 end
 
 local function range(table, start, count, step)
-	-- build a range iterator over a table
-	step  = step  or 1
-	count = count or 0
-	start = start or 1
+    -- build a range iterator over a table
+    assert_table("range", table)
 
-	local i = start
-	local c = count
+    step  = step  or 1
+    count = count or 0
+    start = start or 1
 
-	return function()
+    local i = start
+    local c = count
 
-		if c > 0 then
-			local v = table[i]
-			i = i + step
-			c = c - 1
+    return function()
 
-			return v
-		end
-	end
+        if c > 0 then
+            local v = table[i]
+            i = i + step
+            c = c - 1
+
+            return v
+        end
+    end
 end
 
 local function step(table, start, step)
-	-- build a step iterator over a table
-	step  = step  or 1
-	start = start or 1
+    -- build a step iterator over a table
+    assert_table("step", table)
 
-	local i = start
+    step  = step  or 1
+    start = start or 1
 
-	return function()
-		local v = table[i]
-		i = i + step
+    local i = start
 
-		return v
-	end
+    return function()
+        local v = table[i]
+        i = i + step
+
+        return v
+    end
 end
 
 local function each(table, func)
-	-- apply the given function to all elements of the table
-	local len = #table
+    -- apply the given function to all elements of the table
+    assert_table_func("each", table, func)
 
-	for i = 1, len do
-		func(table[i])
-	end
+    local len = #table
 
-	return Table(table)
+    for i = 1, len do
+        func(table[i])
+    end
+
+    return Table(table)
 end
 
 local function eachKeys(table, func)
-	-- apply the given function on all (key, value) pairs of table
+    -- apply the given function on all (key, value) pairs of table
+    assert_table_func("eachKeys", table, func)
 
-	for k, v in pairs(table) do
-		func(k, v)
-	end
+    for k, v in pairs(table) do
+        func(k, v)
+    end
 
-	return Table(table)
+    return Table(table)
 end
 
---[[
-local function times(count, func)
-	-- execute <func> code multiple times
-	for i = 1, count do
-		func()
-	end
-end
---]]
+-- times
 -------------------------------------------------------------------------------
 -- Functional utils
 -------------------------------------------------------------------------------
 local function map(table, transform)
-	-- returns a new table which elements are the result of applying the transformation function
-	local map = {}
-	local len = #table
+    -- returns a new table which elements are the result of applying the transformation function
+    assert_table_func("map", table, transform)
 
-	for i = 1, len do
-		map[i] = transform(table[i])
-	end
+    local map = {}
+    local len = #table
 
-	return Table(map)
+    for i = 1, len do
+        map[i] = transform(table[i])
+    end
+
+    return Table(map)
 end
 
-local function filter(table, criteria)
-	-- remove elements that not matches the criteria
-	local set = {}
-	local len, k = #table, 1
+local function accept(table, criteria)
+    -- accept elements that matches the criteria
+    assert_table_func("accept", table, criteria)
 
-	for i = 1, len do
-		local item = table[i]
+    local set = {}
+    local len, k = #table, 1
 
-		if criteria(item) then
-			set[k] = item
-			k = k + 1
-		end
-	end
+    for i = 1, len do
+        local item = table[i]
 
-	return Table(set)
+        if criteria(item) then
+            set[k] = item
+            k = k + 1
+        end
+    end
+
+    return Table(set)
 end
 
 local function reject(table, criteria)
-	-- remove elements that matches the criteria
-	local set = {}
-	local len, k = #table, 1
+    -- remove elements that matches the criteria
+    assert_table_func("reject", table, criteria)
 
-	for i = 1, len do
-		local item = table[i]
+    local set = {}
+    local len, k = #table, 1
 
-		if not criteria(item) then
-			set[k] = item
-			k = k + 1
-		end
-	end
+    for i = 1, len do
+        local item = table[i]
 
-	return Table(set)
+        if not criteria(item) then
+            set[k] = item
+            k = k + 1
+        end
+    end
+
+    return Table(set)
 end
 
 local function reduce(table, base, reduction)
-	-- reduce a table into a single value, base is the initial value
-	local value = base
-	local len = #table
+    -- reduce a table into a single value, base is the initial value
+    assert_table_func("reduce", table, reduction)
 
-	for i = 1, len do
-		value = reduction(value, table[i])
-	end
+    local value = base
+    local len = #table
 
-	return value --TODO: wrap into a table and apply mt??
+    for i = 1, len do
+        value = reduction(value, table[i])
+    end
+
+    return value --TODO: wrap into a table and apply mt??
 end
 
 local function flatten(table)
-   -- flattens a nested table (over int indexes)
-   local t = {}
-   local k = 1
-   local q = { table }
-   local n = 1
+    -- flattens a nested table (over int indexes)
+    assert_table("flatten", table)
 
-   while n > 0 do
-      local item = remove(q, n)
-      n = n - 1
-      local l = #item      
+    local t = {}
+    local k = 1
+    local q = { table }
+    local n = 1
 
-      for i = 1, l do
-         local v = item[i]
+    while n > 0 do
+        local item = remove(q, n)
+        local l = #item
+        n = n - 1      
 
-         if type(v) == "table" then
-         	n = n + 1
-            insert(q, n, v)
-         else
-            t[k] = v
-            k = k + 1
-         end
-      end
-   end
+        for i = 1, l do
+            local v = item[i]
 
-   return Table(t)
+            if type(v) == "table" then
+                n = n + 1
+                insert(q, n, v)
+            else
+                t[k] = v
+                k = k + 1
+            end
+        end
+    end
+
+    return Table(t)
 end
 
 local function flatten2(table)
-	-- flattens a nested table (over all key-value pairs)
-	local t = {}
-   local k = 1
-   local q = { table }
-   local n = 1
+    -- flattens a nested table (over all key-value pairs)
+    assert_table("flatten2", table)
 
-   while n > 0 do
-      local item = remove(q, n)
-      n = n - 1
+    local t = {}
+    local k = 1
+    local q = { table }
+    local n = 1
 
-      for _, v in pairs(item) do
+    while n > 0 do
+        local item = remove(q, n)
+        n = n - 1
 
-         if type(v) == "table" then
-         	n = n + 1
-            insert(q, n, v)
-         else
-            t[k] = v
-            k = k + 1
-         end
-      end
-   end
+        for _, v in pairs(item) do
+
+            if type(v) == "table" then
+                n = n + 1
+                insert(q, n, v)
+            else
+                t[k] = v
+                k = k + 1
+            end
+        end
+    end
 
    return Table(t)
 end
@@ -297,205 +331,233 @@ end
 -- Table utils
 -------------------------------------------------------------------------------
 local function max(table, comparator)
-	-- return the biggest value of the input based on a comparator
-	comparator = comparator or Table.asc_compare
+    -- return the biggest value of the input based on a comparator
+    assert_table("max", table)
+    comparator = comparator or Table.asc_compare
 
-	local max = table[1]
-	local len = #table
+    local max = table[1]
+    local len = #table
 
-	for i = 2, len do
-		local item = table[i]
+    for i = 2, len do
+        local item = table[i]
 
-		if comparator(item, max) then
-			max = item
-		end
-	end
+        if comparator(item, max) then
+            max = item
+        end
+    end
 
-	return max
+    return max
 end
 
 local function min(table, comparator)
-	-- return the smallest value of the input based on a comparator
-	comparator = comparator or Table.dsc_compare
+    -- return the smallest value of the input based on a comparator
+    assert_table("min", table)
+    comparator = comparator or Table.dsc_compare
 
-	local min = table[1]
-	local len = #table
+    local min = table[1]
+    local len = #table
 
-	for i = 2, len do
-		local item = table[i]
+    for i = 2, len do
+        local item = table[i]
 
-		if comparator(item, min) then
-			min = item
-		end
-	end
+        if comparator(item, min) then
+            min = item
+        end
+    end
 
-	return min
+    return min
 end
 
 local function sum(table)
-	-- returns the sum of all elements of the table
-	local len = #table
-	local sum = 0
+    -- returns the sum of all elements of the table
+    assert_table("sum", table)
 
-	for i = 1, len do
-		sum = sum + table[i]
-	end
+    local len = #table
+    local sum = 0
 
-	return sum
+    for i = 1, len do
+        sum = sum + table[i]
+    end
+
+    return sum
 end
 
 -- mul, sub, div
 
 local function sample(table)
-	-- returns a random element of the table
-	return table[random(#table)]
+    -- returns a random element of the table
+    assert_table("sample", table)
+
+    local size = #table
+
+    if size == 0 then
+        return nil
+    end
+
+    return table[random(size)]
 end
 
 local function shuffle(table)
-	-- mix the values inside the given table
-	local len = #table
+    -- mix the values inside the given table
+    assert_table("shuffle", table)
 
-	for i = 1, len do
-		local k = random(len)
+    local len = #table
 
-		table[i], table[k] = table[k], table[i]
-	end
+    for i = 1, len do
+        local k = random(len)
 
-	return Table(table)
+        table[i], table[k] = table[k], table[i]
+    end
+
+    return Table(table)
 end
 
 local function keys(table)
-	-- return a table of keys
-	local keys = {}
-	local i = 1
+    -- return a table of keys
+    assert_table("keys", table)
 
-	for k, _ in pairs(table) do
-		keys[i] = k
-		i = i + 1
-	end
+    local keys = {}
+    local i = 1
 
-	return Table(keys)
+    for k, _ in pairs(table) do
+        keys[i] = k
+        i = i + 1
+    end
+
+    return Table(keys)
 end
 
 local function values(table)
-	-- return a table of values
-	local values = {}
+    -- return a table of values
+    assert_table("values", table)
 
-	for i, v in ipairs(table) do
-		values[i] = v
-	end
+    local values = {}
 
-	return Table(values)
+    for i, v in ipairs(table) do
+        values[i] = v
+    end
+
+    return Table(values)
 end
 
 local function reverse(table)
-	-- return a table which values are in opposite order
-	local n = floor(#table * .5)
+    -- return a table which values are in opposite order
+    assert_table("reverse", table)
 
-	for i = 1, n do
+    local n = floor(#table * .5)
+
+    for i = 1, n do
       local k = n - i + 1
-		local x = table[i]
-		local y = table[k]
+        local x = table[i]
+        local y = table[k]
 
-		table[i], table[k] = y, x
-	end
+        table[i], table[k] = y, x
+    end
 
-	return Table(table)
+    return Table(table)
 end
 
 local function copy(table)
-	-- copy each key-value of the input table
-	local clone = {}
+    -- copy each key-value of the input table
+    assert_table("copy", table)
 
-	for k, v in pairs(table) do
-		clone[k] = v
-	end
+    local clone = {}
 
-	return Table(clone)
+    for k, v in pairs(table) do
+        clone[k] = v
+    end
+
+    return Table(clone)
 end
 
 local function pack(...)
-	-- pack a sequence of elements into a single table (keeping nils)
-	return Table { select(1, ...) }
+    -- pack a sequence of elements into a single table (keeping nils)
+    return Table { select(1, ...) }
 end
 
 local function pack2(...)
-	-- pack a sequence of elements into a single table (whithout nils)
-	local temp = { select(1, ...) }
-	local data = {}
-	local n, k = maxlen(temp), 1
+    -- pack a sequence of elements into a single table (whithout nils)
+    local temp = { select(1, ...) }
+    local data = {}
+    local n, k = maxlen(temp), 1
 
-	for i = 1, n do
-		local value = temp[i]
+    for i = 1, n do
+        local value = temp[i]
 
-		if not (value == nil) then
-			data[k] = value
-			k = k + 1
-		end
+        if not (value == nil) then
+            data[k] = value
+            k = k + 1
+        end
 
-		temp[i] = nil
-	end
+        temp[i] = nil
+    end
 
-	return Table(data)
+    return Table(data)
 end
+
+-- fun for inserting a repeated value (as initialization) in table
 
 local function tostring(table)
-	local len = #table
-	local buf = { "Table [" }
+    local len = #table
+    local buf = { "Table [" }
 
-	for i = 1, len do
-		buf[i + 1] = format("  i: %d, value: %s", i, table[i])
-	end
+    for i = 1, len do
+        buf[i + 1] = format("  i: %d, value: %s", i, table[i])
+    end
 
-	buf[len + 2] = "]"
+    buf[len + 2] = "]"
 
-	return concat(buf, "\n")
+    return concat(buf, "\n")
 end
 
-local function init(self, table)
+local function init(self, ...)
 
-	if table then
-		self = table
-	end
+    if arg then
+        self = { select(1, ...) }
 
-	return setmetatable(self, mt)
+        if #self == 1 and type(self[1] == "table") then
+            self = self[1]
+        end
+    end
+
+   return setmetatable(self, mt)     
 end
 -------------------------------------------------------------------------------
 -- class metatable
 -------------------------------------------------------------------------------
 mt = {
-	__index = {
-		-- functional
-		map = map,
-		filter = filter,
-		reject = reject,
-		reduce = reduce,
-      	flatten  = flatten,
-      	flatten2 = flatten2,
+    __index = {
+        -- functional
+        map = map,
+        accept = accept,
+        reject = reject,
+        reduce = reduce,
+        flatten  = flatten,
+        flatten2 = flatten2,
 
-		-- iterators
-		iter = iter,
-		each = each,
-		step = step,
-		range = range,
-		eachKeys = eachKeys,
+        -- iterators
+        iter = iter,
+        each = each,
+        step = step,
+        range = range,
+        eachKeys = eachKeys,
 
-		-- table utils
-		max = max,
-		min = min,
-		sum = sum,
-		keys = keys,
-		copy = copy,
-		pack = pack,
-		pack2 = pack2,
-		values = values,
-		sample = sample,
-		shuffle = shuffle,
-		reverse = reverse,
-	},
+        -- table utils
+        max = max,
+        min = min,
+        sum = sum,
+        keys = keys,
+        copy = copy,
+        pack = pack,
+        pack2 = pack2,
+        values = values,
+        sample = sample,
+        shuffle = shuffle,
+        reverse = reverse,
+    },
 
-	__tostring = tostring,
-	__call = init,
+    __tostring = tostring,
+    __call = init2,
 }
 -------------------------------------------------------------------------------
 return setmetatable(Table, mt)
