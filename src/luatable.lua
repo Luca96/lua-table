@@ -647,8 +647,6 @@ mt = {
         reverse = reverse,
         deepCopy = deepCopy,
         removeNils = removeNils,
-
-        -- init helpers
     },
 
     __tostring  = tostring,
