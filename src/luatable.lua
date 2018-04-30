@@ -56,6 +56,11 @@ local function assert_table_func(msg, t, f)
     assert(type(f) == "function", 
         format("[Table.%s()] require a not-nil function!", msg))
 end
+
+local function assert_number(fn, num)
+    assert(type(num) == "number", 
+        format("[Table.%s()] require a number!", fn))
+end
 -------------------------------------------------------------------------------
 -- LuaTable: lua tables with steroids
 -------------------------------------------------------------------------------
@@ -80,6 +85,10 @@ local mt = nil
 function Table.void()
 end
 
+function Table.nils(a)
+    return a == nil
+end
+
 function Table.odd(a)
     return a % 2 == 1
 end
@@ -96,9 +105,7 @@ end
 
 -- square_root
 
-function Table.abs(a)
-   return abs(a)
-end
+Table.abs = abs
 
 function Table.double(a)
     return a * 2
@@ -176,8 +183,8 @@ local function step(table, start, step)
     end
 end
 
-local function each(table, func)
-    -- apply the given function to all elements of the table
+local function eachi(table, func)
+    -- apply the given function to all elements of the table (int indexes)
     assert_table_func("each", table, func)
 
     local len = #table
@@ -186,10 +193,10 @@ local function each(table, func)
         func(table[i])
     end
 
-    return Table(table)
+    return table
 end
 
-local function eachKeys(table, func)
+local function each(table, func)
     -- apply the given function on all (key, value) pairs of table
     assert_table_func("eachKeys", table, func)
 
@@ -199,8 +206,6 @@ local function eachKeys(table, func)
 
     return Table(table)
 end
-
--- times
 -------------------------------------------------------------------------------
 -- Functional utils
 -------------------------------------------------------------------------------
@@ -208,8 +213,8 @@ local function map(table, transform)
     -- returns a new table which elements are the result of applying the transformation function
     assert_table_func("map", table, transform)
 
-    local map = {}
     local len = #table
+    local map = {}
 
     for i = 1, len do
         map[i] = transform(table[i])
@@ -222,38 +227,38 @@ local function accept(table, criteria)
     -- accept elements that matches the criteria
     assert_table_func("accept", table, criteria)
 
-    local set = {}
     local len, k = #table, 1
+    local subset = {}
 
     for i = 1, len do
         local item = table[i]
 
         if criteria(item) then
-            set[k] = item
+            subset[k] = item
             k = k + 1
         end
     end
 
-    return Table(set)
+    return Table(subset)
 end
 
 local function reject(table, criteria)
     -- remove elements that matches the criteria
     assert_table_func("reject", table, criteria)
 
-    local set = {}
     local len, k = #table, 1
+    local subset = {}
 
     for i = 1, len do
         local item = table[i]
 
         if not criteria(item) then
-            set[k] = item
+            subset[k] = item
             k = k + 1
         end
     end
 
-    return Table(set)
+    return Table(subset)
 end
 
 local function reduce(table, base, reduction)
@@ -267,7 +272,7 @@ local function reduce(table, base, reduction)
         value = reduction(value, table[i])
     end
 
-    return value --TODO: wrap into a table and apply mt??
+    return value
 end
 
 local function flatten(table)
@@ -330,6 +335,28 @@ end
 -------------------------------------------------------------------------------
 -- Table utils
 -------------------------------------------------------------------------------
+local function removeNils(table)
+    -- remove all nil values along all key-value pairs (event nested) 
+    assert_table("removeNils", table)
+
+    local t, i = {}, 1
+
+    for k, v in pairs(table) do
+        if type(v) == "table" then
+            v = removeNils(v)
+        end
+
+        if type(k) == "number" then
+            t[i] = v
+            i = i + 1
+        else
+            t[k] = v
+        end
+    end
+
+    return Table(t)
+end
+
 local function max(table, comparator)
     -- return the biggest value of the input based on a comparator
     assert_table("max", table)
@@ -346,7 +373,7 @@ local function max(table, comparator)
         end
     end
 
-    return max
+    return max, table
 end
 
 local function min(table, comparator)
@@ -365,7 +392,7 @@ local function min(table, comparator)
         end
     end
 
-    return min
+    return min, table
 end
 
 local function sum(table)
@@ -379,7 +406,7 @@ local function sum(table)
         sum = sum + table[i]
     end
 
-    return sum
+    return sum, table
 end
 
 -- mul, sub, div
@@ -409,7 +436,7 @@ local function shuffle(table)
         table[i], table[k] = table[k], table[i]
     end
 
-    return Table(table)
+    return table
 end
 
 local function keys(table)
@@ -454,7 +481,7 @@ local function reverse(table)
         table[i], table[k] = y, x
     end
 
-    return Table(table)
+    return table
 end
 
 local function copy(table)
@@ -464,6 +491,23 @@ local function copy(table)
     local clone = {}
 
     for k, v in pairs(table) do
+        clone[k] = v
+    end
+
+    return Table(clone)
+end
+
+local function deepCopy(table)
+    -- deepCopy each key-value of the input table into a new table
+    assert_table("deepCopy", table)
+    
+    local clone = {} 
+
+    for k, v in pairs(table) do
+        if type(v) == "table" then
+            v = copy(v)
+        end
+           
         clone[k] = v
     end
 
@@ -495,19 +539,25 @@ local function pack2(...)
     return Table(data)
 end
 
--- fun for inserting a repeated value (as initialization) in table
+local function tostring(table, tab)
+    tab = tab or "  "
 
-local function tostring(table)
-    local len = #table
-    local buf = { "Table [" }
+    local b = { "Table [" }
+    local i = 2
 
-    for i = 1, len do
-        buf[i + 1] = format("  i: %d, value: %s", i, table[i])
+    for k, v in pairs(table) do
+        if type(v) == "table" then
+            b[i] = format(tab .. "k: %s, v: %s", k, tostring(v, tab .. "  "))
+        else
+            b[i] = format(tab .. "k: %s, v: %s", k, v)
+        end
+
+        i = i + 1
     end
 
-    buf[len + 2] = "]"
+    b[i] = (tab .. "]"):sub(3)
 
-    return concat(buf, "\n")
+    return concat(b, "\n")
 end
 
 local function init(self, ...)
@@ -523,6 +573,47 @@ local function init(self, ...)
    return setmetatable(self, mt)     
 end
 -------------------------------------------------------------------------------
+-- table init helpers
+-------------------------------------------------------------------------------
+function Table.zeros(size)
+    -- fill the table with zeros
+    assert_number("zeros", size)
+
+    local t = {}
+
+    for i = 1, size do
+        t[i] = 0
+    end
+
+    return Table(t)
+end
+
+function Table.ones(size)
+    -- fill the table with ones
+    assert_number("ones", size)
+
+    local t = {}
+
+    for i = 1, size do
+        t[i] = 1
+    end
+
+    return Table(t)
+end
+
+function Table.create(size, init_val)
+    -- fill the table with a custom init-value
+    assert_number("create", size)
+
+    local t = {}
+
+    for i = 1, size do
+        t[i] = init_val
+    end
+
+    return Table(t)
+end
+-------------------------------------------------------------------------------
 -- class metatable
 -------------------------------------------------------------------------------
 mt = {
@@ -536,11 +627,11 @@ mt = {
         flatten2 = flatten2,
 
         -- iterators
-        iter = iter,
-        each = each,
-        step = step,
+        iter  = iter,
+        each  = each,
+        eachi = eachi,
+        step  = step,
         range = range,
-        eachKeys = eachKeys,
 
         -- table utils
         max = max,
@@ -554,10 +645,14 @@ mt = {
         sample = sample,
         shuffle = shuffle,
         reverse = reverse,
+        deepCopy = deepCopy,
+        removeNils = removeNils,
+
+        -- init helpers
     },
 
-    __tostring = tostring,
-    __call = init2,
+    __tostring  = tostring,
+    __call = init,
 }
 -------------------------------------------------------------------------------
 return setmetatable(Table, mt)
