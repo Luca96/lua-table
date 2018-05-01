@@ -649,7 +649,11 @@ mt = {
         removeNils = removeNils,
     },
 
+<<<<<<< HEAD
     __tostring  = tostring,
+=======
+    __tostring = tostring,
+>>>>>>> 364b6635b54c64d04c03500d15aaaf986d2e306f
     __call = init,
 }
 -------------------------------------------------------------------------------
