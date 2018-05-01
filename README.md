@@ -1,6 +1,9 @@
 # Lua-Table
 Lua tables with superpowers :muscle:
 
+## Changes
+View the ```changelog``` for more info about changes
+
 ## Examples
 ```lua
 local Table = require "luatable"
@@ -21,12 +24,12 @@ for i in t:iter() do
 end
 
 -- apply a function over all values (from 1 to #t)
-t:each(function(a)
+t:eachi(function(a)
   -- do stuff
 end)
 
 -- over all (key, value) pairs
-t:eachKeys(function(key, val)
+t:each(function(key, val)
   -- other stuff
 end)
 
@@ -45,4 +48,11 @@ local random_value = t:sample()
 
 -- randomly mixing the table
 local shuffled = t:shuffle()
+
+-- remove nil values from a table
+local table_with_nils = Table { 1, nil, 2, { nil, 3 }, nil, 4 }
+local table_without_nils = table_with_nils:removeNils()
+
+-- clone a table
+local cloned = t:clone()
 ```

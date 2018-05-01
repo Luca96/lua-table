@@ -65,7 +65,7 @@ end
 -- LuaTable: lua tables with steroids
 -------------------------------------------------------------------------------
 local Table = {
-    __VERSION = "0.1",
+    __VERSION = "0.2",
     __AUTHOR  = "Luca Anzalone",
 }
 
@@ -206,6 +206,21 @@ local function each(table, func)
 
     return Table(table)
 end
+
+local function each_key(table)
+    -- return a table of keys
+    assert_table("keys", table)
+
+    local keys = {}
+    local i = 1
+
+    for k, _ in pairs(table) do
+        keys[i] = k
+        i = i + 1
+    end
+
+    return Table(keys)
+end
 -------------------------------------------------------------------------------
 -- Functional utils
 -------------------------------------------------------------------------------
@@ -336,7 +351,7 @@ end
 -- Table utils
 -------------------------------------------------------------------------------
 local function removeNils(table)
-    -- remove all nil values along all key-value pairs (event nested) 
+    -- returns a new table without nils along all key-value pairs (even nested) 
     assert_table("removeNils", table)
 
     local t, i = {}, 1
@@ -409,7 +424,19 @@ local function sum(table)
     return sum, table
 end
 
--- mul, sub, div
+local function mul(table)
+    -- returns the product of all elements of the table
+    assert_table("mul", table)    
+
+    local len = #table
+    local mul = 0
+
+    for i = 1, len do
+        mul = mul * table[i]
+    end
+
+    return mul, table
+end
 
 local function sample(table)
     -- returns a random element of the table
@@ -484,34 +511,21 @@ local function reverse(table)
     return table
 end
 
-local function copy(table)
-    -- copy each key-value of the input table
-    assert_table("copy", table)
-
-    local clone = {}
-
-    for k, v in pairs(table) do
-        clone[k] = v
-    end
-
-    return Table(clone)
-end
-
-local function deepCopy(table)
-    -- deepCopy each key-value of the input table into a new table
-    assert_table("deepCopy", table)
+local function clone(table)
+    -- clone each key-value of the input table into a new table
+    assert_table("clone", table)
     
-    local clone = {} 
+    local copy = {} 
 
     for k, v in pairs(table) do
         if type(v) == "table" then
-            v = copy(v)
+           v = clone(v)
         end
            
-        clone[k] = v
+        copy[k] = v
     end
 
-    return Table(clone)
+    return Table(copy)
 end
 
 local function pack(...)
@@ -638,22 +652,17 @@ mt = {
         min = min,
         sum = sum,
         keys = keys,
-        copy = copy,
         pack = pack,
         pack2 = pack2,
+        clone = clone,
         values = values,
         sample = sample,
         shuffle = shuffle,
         reverse = reverse,
-        deepCopy = deepCopy,
         removeNils = removeNils,
     },
 
-<<<<<<< HEAD
     __tostring  = tostring,
-=======
-    __tostring = tostring,
->>>>>>> 364b6635b54c64d04c03500d15aaaf986d2e306f
     __call = init,
 }
 -------------------------------------------------------------------------------
