@@ -1,3 +1,6 @@
+-------------------------------------------------------------------------------
+-- LuaTable: lua tables with steroids
+-------------------------------------------------------------------------------
 --[[
 MIT License
 
@@ -29,43 +32,69 @@ local insert = table.insert
 local remove = table.remove 
 local concat = table.concat 
 local maxlen = table.maxn 
+local tsort  = table.sort 
 local format = string.format 
 local random = math.random 
 local floor  = math.floor 
 local abs    = math.abs 
+local print  = print 
+local pairs  = pairs 
+local ipairs = ipairs 
 local type   = type 
 -------------------------------------------------------------------------------
 math.randomseed(os.time())
 -------------------------------------------------------------------------------
 -- assertions / warnings
 -------------------------------------------------------------------------------
+local warn = "\27[1;33mWarning at\27[0m"
+local term = "\27[1;36m>>>\27[0m"
+local err  = "\27[1;31mError at\27[0m"
+
 local function assert_init(t)
     assert(type(t) == "table", 
-        format("[Table.init()] optional parameter <table> must be a not-nil table!", msg))
+        format("%s Table.init(): optional parameter <table> must be a not-nil table!", 
+            err, msg))
 end
 
 local function assert_table(msg, t)
     assert(type(t) == "table", 
-        format("[Table.%s()] parameter <table> must be a not-nil table!", msg))
+        format("%s Table.%s(): parameter <table> must be a not-nil table!", 
+            err, msg))
 end
 
 local function assert_table_func(msg, t, f)
     assert(type(t) == "table", 
-        format("[Table.%s()] require a not-nil table!", msg))
+        format("%s Table.%s(): require a not-nil table!", err, msg))
 
     assert(type(f) == "function", 
-        format("[Table.%s()] require a not-nil function!", msg))
+        format("%s Table.%s(): require a not-nil function!", err, msg))
 end
 
 local function assert_number(fn, num)
     assert(type(num) == "number", 
-        format("[Table.%s()] require a number!", fn))
+        format("%s Table.%s(): require a number!", err, fn))
+end
+
+local function assert_true(f, msg, test)
+    assert(test, format("%s Table.%s(): %s", err, f, msg))
+end
+
+local function warn_nil(fn, value)
+    if value == nil then
+        print(format("%s %s Table.%s(): nil value", term, warn, fn))
+    end
+end
+
+local function warn_if(f, msg, test)
+    if test then
+        print(format("%s %s Table.%s(): %s", term, warn, f, msg))
+    end
 end
 -------------------------------------------------------------------------------
--- LuaTable: lua tables with steroids
+-- CLASS
 -------------------------------------------------------------------------------
 local Table = {
-    __VERSION = "0.2",
+    __VERSION = "0.3",
     __AUTHOR  = "Luca Anzalone",
 }
 
@@ -130,7 +159,7 @@ end
 -- Iterator and for-each
 -------------------------------------------------------------------------------
 local function iter(table)
-    -- build an iterator over the given table
+    -- build an iterator through the given table
     assert_table("iter", table)
 
     local i = 1
@@ -143,9 +172,26 @@ local function iter(table)
     end
 end
 
+local function inverse(table)
+    -- build an iterator that iterate, through the table, in reversed order
+    assert_table("reverseIter", table)
+
+    local n = #table
+
+    return function()
+        local v = table[n]
+        n = n - 1
+
+        return v
+    end
+end
+
 local function range(table, start, count, step)
     -- build a range iterator over a table
     assert_table("range", table)
+    assert_number("range", start)
+    assert_number("range", count)
+    assert_number("range", step)
 
     step  = step  or 1
     count = count or 0
@@ -169,6 +215,8 @@ end
 local function step(table, start, step)
     -- build a step iterator over a table
     assert_table("step", table)
+    assert_number("range", start)
+    assert_number("step", step)
 
     step  = step  or 1
     start = start or 1
@@ -180,6 +228,48 @@ local function step(table, start, step)
         i = i + step
 
         return v
+    end
+end
+
+local function group(table, k)
+    -- iterate through table by grouping values together (group size is k)
+    -- in each iteration, the iterator will return a k-tuple
+    assert_table("group", table)
+    assert_true("group", "k must be > 0!", (type(k) == "number") and (k > 0))
+
+    local i = 0
+
+    return function()
+        local values = {}
+
+        for j = 1, k do
+            values[j] = table[i + j]
+        end
+
+        i = i + k
+
+        return unpack(values)
+    end
+end
+
+local function slide(table, k)
+    -- iterate through table like a sliding-window of size k
+    -- in each iteration, the iterator will return a k-tuple
+    assert_table("slide", table)
+    assert_true("slide", "k must be > 0!", (type(k) == "number") and (k > 0))
+    
+    local i = 0
+
+    return function()
+        local values = {}
+
+        for j = 1, k do
+            values[j] = table[i + j]
+        end
+
+        i = i + 1
+
+        return unpack(values)
     end
 end
 
@@ -205,21 +295,6 @@ local function each(table, func)
     end
 
     return Table(table)
-end
-
-local function each_key(table)
-    -- return a table of keys
-    assert_table("keys", table)
-
-    local keys = {}
-    local i = 1
-
-    for k, _ in pairs(table) do
-        keys[i] = k
-        i = i + 1
-    end
-
-    return Table(keys)
 end
 -------------------------------------------------------------------------------
 -- Functional utils
@@ -511,6 +586,33 @@ local function reverse(table)
     return table
 end
 
+local function slice(table, i, j)
+    -- return a portion of the input table that ranges to i from j
+    -- nil values are ignored
+    assert_table("slice", table)
+
+    j = j or #table
+    i = i or 1
+
+    assert_number("slice", i)
+    assert_number("slice", j)
+    warn_if("slice", i .. " > " .. j, i > j)
+
+    local part = {}
+    local n = 1
+
+    for k = i, j do
+        local v = table[k]
+
+        if not (v == nil) then
+            part[n] = v
+            n = n + 1
+        end
+    end
+
+    return Table(part)
+end
+
 local function clone(table)
     -- clone each key-value of the input table into a new table
     assert_table("clone", table)
@@ -529,7 +631,7 @@ local function clone(table)
 end
 
 local function pack(...)
-    -- pack a sequence of elements into a single table (keeping nils)
+    -- pack a sequence of elements into a single table (keeps nils)
     return Table { select(1, ...) }
 end
 
@@ -553,6 +655,38 @@ local function pack2(...)
     return Table(data)
 end
 
+local function merge(t1, t2)
+    -- return a new table which values are taken by both t1 and t2
+    -- it consider only values over integer indexes.
+    assert_table("merge", t1)
+    assert_table("merge", t2)
+
+    local merged = {}
+    local k = 1
+
+    for i = 1, #t1 do
+        merged[k] = t1[i]
+        k = k + 1
+    end
+
+    for i = 1, #t2 do
+       merged[k] = t2[i]
+        k = k + 1
+    end
+
+    return Table(merged)
+end
+
+local function sort(table, comparator)
+    -- sort the table according to the comparator function
+    assert_table("sort", table)
+
+    comparator = comparator or asc_compare
+    tsort(table, comparator)
+
+    return table
+end
+
 local function tostring(table, tab)
     tab = tab or "  "
 
@@ -573,18 +707,90 @@ local function tostring(table, tab)
 
     return concat(b, "\n")
 end
+-------------------------------------------------------------------------------
+-- table operators
+-------------------------------------------------------------------------------
+local function at(table, index, default_value)
+    -- returns the element at the given index, if index is negative it starts
+    -- counting from the end of the table and then returning the element.
+    -- at works with integer indexes, use get for other key-values (index).
+    -- optionally you can specify a default-value that is returned in case
+    -- table[index] is nil.
+    assert_number("at", index)
 
-local function init(self, ...)
-
-    if arg then
-        self = { select(1, ...) }
-
-        if #self == 1 and type(self[1] == "table") then
-            self = self[1]
-        end
+    -- positive index
+    if index >= 0 then
+        return table[index] or default_value
     end
 
-   return setmetatable(self, mt)     
+    -- negative index
+    return table[#table + index + 1]
+end
+
+local function get(table, key, default_value)
+    -- returns the element at the given key, if element is nil it returns an 
+    -- optional default value
+    return table[key] or default_value
+end
+
+local function append(table, ...)
+    -- insert one or more elements at the end of the table
+    warn_nil("append", ...)
+
+    local sequence = { select(1, ...) }
+
+    for i = 1, #sequence do
+        insert(table, sequence[i])
+    end
+
+    return table
+end
+
+local function push(table, ...)
+    -- insert one or more elements at the begin of the table
+    warn_nil("push", ...)
+
+    local sequence = { select(1, ...) }
+
+    for i = 1, #sequence do
+        insert(table, 1, sequence[i])
+    end
+
+    return table
+end
+
+local function pop(table)
+    -- remove and return the last element into the table
+    return remove(table, #table)
+end
+
+local function last(table)
+    -- return the last element into the table
+    return table[#table]
+end
+
+local function first(table)
+    -- return the first value into the table
+    return table[1]
+end
+
+local function clear(table)
+    -- empties the given table
+    local n = #table
+
+    for i = 1, n do
+        table[i] = nil
+    end
+end
+
+local function empty(table)
+    -- check if the table has 0 elements, it not consider keys.
+    return #table == 0
+end
+
+local function notEmpty(table)
+    -- check if the table has at least one elements, it not consider keys.
+    return #table > 0
 end
 -------------------------------------------------------------------------------
 -- table init helpers
@@ -628,6 +834,21 @@ function Table.create(size, init_val)
     return Table(t)
 end
 -------------------------------------------------------------------------------
+-- constructor
+-------------------------------------------------------------------------------
+local function init(self, ...)
+
+    if arg then
+        self = { select(1, ...) }
+
+        if #self == 1 and type(self[1]) == "table" then
+            self = self[1]
+        end
+    end
+
+   return setmetatable(self, mt)     
+end
+-------------------------------------------------------------------------------
 -- class metatable
 -------------------------------------------------------------------------------
 mt = {
@@ -646,20 +867,39 @@ mt = {
         eachi = eachi,
         step  = step,
         range = range,
+        group = group,
+        slide = slide,
+        inverse = inverse,
 
         -- table utils
         max = max,
         min = min,
         sum = sum,
+        mul = mul,
         keys = keys,
+        sort = sort,
         pack = pack,
         pack2 = pack2,
         clone = clone,
+        slice = slice,
+        merge = merge,
         values = values,
         sample = sample,
         shuffle = shuffle,
         reverse = reverse,
         removeNils = removeNils,
+
+        -- table operators
+        at  = at,
+        get = get,
+        pop = pop,
+        last = last,
+        push = push,
+        first = first,
+        empty = empty,
+        clear = clear,
+        append = append,
+        notEmpty = notEmpty,
     },
 
     __tostring  = tostring,
