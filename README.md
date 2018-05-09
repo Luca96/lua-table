@@ -1,4 +1,4 @@
-# Lua-Table
+# Lua-Table 0.4
 Lua tables with superpowers :muscle:
 
 ## Changes

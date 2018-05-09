@@ -1,6 +1,12 @@
 # Lua-Table Changelog
 
-## (0.3) ---- :
+## (0.4) 09/05/2018:
+- change into table utils: key and values are now iterators
+- renamed: Table.create to Table.new
+- table utils: added find, keySet, valueSet
+- table operators: added has and hasKey
+
+## (0.3) 05/05/2018:
 - fixed a bug into init function 
 - introduced table operators, like: at, get, push, append, pop, empty, ...
 - new table utils: merge, sort and slice

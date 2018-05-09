@@ -94,7 +94,7 @@ end
 -- CLASS
 -------------------------------------------------------------------------------
 local Table = {
-    __VERSION = "0.3",
+    __VERSION = "0.4",
     __AUTHOR  = "Luca Anzalone",
 }
 
@@ -130,11 +130,12 @@ function Table.half(a)
     return a * .5
 end
 
--- square
+function Table.sqr(a)
+    return a * a
+end
 
--- square_root
-
-Table.abs = abs
+Table.sqrt = math.sqrt 
+Table.abs  = abs
 
 function Table.double(a)
     return a * 2
@@ -174,7 +175,7 @@ end
 
 local function inverse(table)
     -- build an iterator that iterate, through the table, in reversed order
-    assert_table("reverseIter", table)
+    assert_table("inverse", table)
 
     local n = #table
 
@@ -188,7 +189,7 @@ end
 
 local function range(table, start, count, step)
     -- build a range iterator over a table
-    assert_table("range", table)
+    assert_table ("range", table)
     assert_number("range", start)
     assert_number("range", count)
     assert_number("range", step)
@@ -214,7 +215,7 @@ end
 
 local function step(table, start, step)
     -- build a step iterator over a table
-    assert_table("step", table)
+    assert_table ("step", table)
     assert_number("range", start)
     assert_number("step", step)
 
@@ -235,7 +236,7 @@ local function group(table, k)
     -- iterate through table by grouping values together (group size is k)
     -- in each iteration, the iterator will return a k-tuple
     assert_table("group", table)
-    assert_true("group", "k must be > 0!", (type(k) == "number") and (k > 0))
+    assert_true ("group", "k must be > 0!", (type(k) == "number") and (k > 0))
 
     local i = 0
 
@@ -256,7 +257,7 @@ local function slide(table, k)
     -- iterate through table like a sliding-window of size k
     -- in each iteration, the iterator will return a k-tuple
     assert_table("slide", table)
-    assert_true("slide", "k must be > 0!", (type(k) == "number") and (k > 0))
+    assert_true ("slide", "k must be > 0!", (type(k) == "number") and (k > 0))
     
     local i = 0
 
@@ -275,7 +276,7 @@ end
 
 local function eachi(table, func)
     -- apply the given function to all elements of the table (int indexes)
-    assert_table_func("each", table, func)
+    assert_table_func("eachi", table, func)
 
     local len = #table
 
@@ -288,13 +289,57 @@ end
 
 local function each(table, func)
     -- apply the given function on all (key, value) pairs of table
-    assert_table_func("eachKeys", table, func)
+    assert_table_func("each", table, func)
 
     for k, v in pairs(table) do
         func(k, v)
     end
 
-    return Table(table)
+    return table
+end
+
+local function keys(table)
+    -- iterate over all table keys 
+    assert_table("keys", table)
+
+    local keys = {}
+    local j = 1
+
+    for k, _ in pairs(table) do
+        keys[j] = k
+        j = j + 1
+    end
+
+    j = 1
+
+    return function()
+        local k = keys[j]
+        j = j + 1
+
+        return k
+    end
+end
+
+local function values(table)
+    -- iterate over all table values
+    assert_table("values", table)
+
+    local values = {}
+    local k = 1
+
+    for _, v in pairs(table) do
+        values[k] = v
+        k = k + 1
+    end
+
+    k = 1
+
+    return function()
+        local v = values[k]
+        k = k + 1
+
+        return v
+    end
 end
 -------------------------------------------------------------------------------
 -- Functional utils
@@ -397,6 +442,7 @@ end
 
 local function flatten2(table)
     -- flattens a nested table (over all key-value pairs)
+    -- flatten2 is slower than flatten
     assert_table("flatten2", table)
 
     local t = {}
@@ -541,34 +587,6 @@ local function shuffle(table)
     return table
 end
 
-local function keys(table)
-    -- return a table of keys
-    assert_table("keys", table)
-
-    local keys = {}
-    local i = 1
-
-    for k, _ in pairs(table) do
-        keys[i] = k
-        i = i + 1
-    end
-
-    return Table(keys)
-end
-
-local function values(table)
-    -- return a table of values
-    assert_table("values", table)
-
-    local values = {}
-
-    for i, v in ipairs(table) do
-        values[i] = v
-    end
-
-    return Table(values)
-end
-
 local function reverse(table)
     -- return a table which values are in opposite order
     assert_table("reverse", table)
@@ -679,12 +697,55 @@ end
 
 local function sort(table, comparator)
     -- sort the table according to the comparator function
-    assert_table("sort", table)
+    assert_table_func("sort", table, comparator)
+
 
     comparator = comparator or asc_compare
     tsort(table, comparator)
 
     return table
+end
+
+local function find(table, value)
+    -- find a value inside the given table, it returns the value's index
+    -- if finded otherwise it return nil
+    assert_table("find", table)
+
+    local n = #table
+
+    for i = 1, n do
+        if table[i] == value then
+            return i
+        end
+    end
+
+    return nil
+end
+
+local function keySet(table)
+    -- return a table that contains all the keys of the given table
+    local keys = {}
+    local k = 1
+
+    for key in Table.keys(table) do
+        keys[k] = key
+        k = k + 1
+    end
+
+    return Table(keys)
+end
+
+local function valueSet(table)
+    -- return a table that contains all the values of the given table
+    local values = {}
+    local k = 1
+
+    for val in Table.values(table) do
+        values[k] = val
+        k = k + 1
+    end 
+
+    return Table(values)
 end
 
 local function tostring(table, tab)
@@ -710,87 +771,103 @@ end
 -------------------------------------------------------------------------------
 -- table operators
 -------------------------------------------------------------------------------
-local function at(table, index, default_value)
+local function at(self, index, default_value)
     -- returns the element at the given index, if index is negative it starts
     -- counting from the end of the table and then returning the element.
-    -- at works with integer indexes, use get for other key-values (index).
+    -- at works with integer indexes, use get for other key-values (as index).
     -- optionally you can specify a default-value that is returned in case
     -- table[index] is nil.
     assert_number("at", index)
 
     -- positive index
     if index >= 0 then
-        return table[index] or default_value
+        return self[index] or default_value
     end
 
     -- negative index
-    return table[#table + index + 1]
+    return self[#self + index + 1]
 end
 
-local function get(table, key, default_value)
+local function get(self, key, default_value)
     -- returns the element at the given key, if element is nil it returns an 
     -- optional default value
-    return table[key] or default_value
+    return self[key] or default_value
 end
 
-local function append(table, ...)
+local function append(self, ...)
     -- insert one or more elements at the end of the table
     warn_nil("append", ...)
 
     local sequence = { select(1, ...) }
 
     for i = 1, #sequence do
-        insert(table, sequence[i])
+        insert(self, sequence[i])
     end
 
-    return table
+    return self
 end
 
-local function push(table, ...)
+local function push(self, ...)
     -- insert one or more elements at the begin of the table
     warn_nil("push", ...)
 
     local sequence = { select(1, ...) }
 
     for i = 1, #sequence do
-        insert(table, 1, sequence[i])
+        insert(self, 1, sequence[i])
     end
 
-    return table
+    return self
 end
 
-local function pop(table)
+local function pop(self)
     -- remove and return the last element into the table
-    return remove(table, #table)
+    return remove(self, #self)
 end
 
-local function last(table)
+local function last(self)
     -- return the last element into the table
-    return table[#table]
+    return self[#self]
 end
 
-local function first(table)
+local function first(self)
     -- return the first value into the table
-    return table[1]
+    return self[1]
 end
 
-local function clear(table)
+local function clear(self)
     -- empties the given table
-    local n = #table
+    local n = #self
 
     for i = 1, n do
-        table[i] = nil
+        self[i] = nil
     end
 end
 
-local function empty(table)
-    -- check if the table has 0 elements, it not consider keys.
-    return #table == 0
+local function has(self, value)
+    -- return true if it finds the given value, otherwise returns false
+    return self:find(value) ~= nil
 end
 
-local function notEmpty(table)
+local function hasKey(self, key)
+    -- returns true if self[key] is not nil
+    for k, _ in pairs(self) do
+        if k == key then
+            return true
+        end
+    end
+
+    return false
+end
+
+local function empty(self)
+    -- check if the table has 0 elements, it not consider keys.
+    return #self == 0
+end
+
+local function notEmpty(self)
     -- check if the table has at least one elements, it not consider keys.
-    return #table > 0
+    return #self > 0
 end
 -------------------------------------------------------------------------------
 -- table init helpers
@@ -821,9 +898,9 @@ function Table.ones(size)
     return Table(t)
 end
 
-function Table.create(size, init_val)
+function Table.new(size, init_val)
     -- fill the table with a custom init-value
-    assert_number("create", size)
+    assert_number("new", size)
 
     local t = {}
 
@@ -869,6 +946,8 @@ mt = {
         range = range,
         group = group,
         slide = slide,
+        keys  = keys,
+        values = values,
         inverse = inverse,
 
         -- table utils
@@ -876,28 +955,31 @@ mt = {
         min = min,
         sum = sum,
         mul = mul,
-        keys = keys,
         sort = sort,
+        find = find,
         pack = pack,
         pack2 = pack2,
         clone = clone,
         slice = slice,
         merge = merge,
-        values = values,
+        keySet = keySet,
         sample = sample,
         shuffle = shuffle,
         reverse = reverse,
+        valueSet = valueSet,
         removeNils = removeNils,
 
         -- table operators
         at  = at,
         get = get,
         pop = pop,
+        has = has,
         last = last,
         push = push,
         first = first,
         empty = empty,
         clear = clear,
+        hasKey = hasKey,
         append = append,
         notEmpty = notEmpty,
     },
