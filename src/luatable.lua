@@ -910,6 +910,21 @@ function Table.new(size, init_val)
 
     return Table(t)
 end
+
+function Table.ofChars(word)
+    -- create a table from the given string, which will contains every single
+    -- character of the input string
+    assert_true("ofChars", "require a valid string!", type(word) == "string")
+
+    local t = Table()
+    local n = word:len()
+
+    for i = 1, n do
+        t:append(word:sub(i, i))
+    end
+
+    return t
+end
 -------------------------------------------------------------------------------
 -- constructor
 -------------------------------------------------------------------------------
