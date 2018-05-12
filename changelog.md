@@ -1,10 +1,10 @@
 # Lua-Table Changelog
 
-## (0.4) 10/05/2018:
+## (0.4) 12/05/2018:
 - change into table utils: key and values are now iterators
 - renamed: Table.create to Table.new
-- table utils: added find, keySet, valueSet
-- table operators: added has and hasKey
+- table utils: added find, keySet, valueSet, avg, minimize and maximize
+- table operators: added has, hasKey and head
 - table init helpers: added ofChars
 
 ## (0.3) 05/05/2018:

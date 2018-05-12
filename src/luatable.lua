@@ -494,7 +494,7 @@ local function removeNils(table)
 end
 
 local function max(table, comparator)
-    -- return the biggest value of the input based on a comparator
+    -- return the biggest value of the input based, on a comparator
     assert_table("max", table)
     comparator = comparator or Table.asc_compare
 
@@ -509,11 +509,11 @@ local function max(table, comparator)
         end
     end
 
-    return max, table
+    return max
 end
 
 local function min(table, comparator)
-    -- return the smallest value of the input based on a comparator
+    -- return the smallest value of the input, based on a comparator
     assert_table("min", table)
     comparator = comparator or Table.dsc_compare
 
@@ -528,7 +528,63 @@ local function min(table, comparator)
         end
     end
 
-    return min, table
+    return min
+end
+
+local function avg(table)
+    -- return the average value of the input
+    assert_table("avg", table)
+
+    local avg = table[1]
+    local len = #table
+
+    for i = 2, len do
+        avg = avg + table[i]
+    end
+
+    return avg / len
+end
+
+local function maximize(table, func)
+    -- return the value of the table that maximize func
+    assert_table_func("maximize", table, func)
+
+    local max_val = table[1]
+    local max_fun = func(max_val)
+    local len = #table
+
+    for i = 2, len do
+        local val  = table[i]
+        local fval = func(val)
+
+        if fval > max_fun then
+            max_fun = fval
+            max_val = val
+        end
+    end
+
+    return max_val
+end
+
+local function minimize(table, func)
+    -- return the value of the table that minimize func
+    assert_table_func("minimize", table, func)
+
+    local min_val = table[1]
+    local min_fun = func(min_val)
+    local len = #table
+
+    for i = 2, len do
+        local val  = table[i]
+        local fval = func(val)
+
+        if fval < min_fun then
+            min_fun = fval
+            min_val = val
+        end
+    end
+
+    return min_val
 end
 
 local function sum(table)
@@ -542,7 +598,7 @@ local function sum(table)
         sum = sum + table[i]
     end
 
-    return sum, table
+    return sum
 end
 
 local function mul(table)
@@ -556,7 +612,7 @@ local function mul(table)
         mul = mul * table[i]
     end
 
-    return mul, table
+    return mul
 end
 
 local function sample(table)
@@ -825,6 +881,11 @@ local function pop(self)
     return remove(self, #self)
 end
 
+local function head(self)
+    -- remove and return the first element into the table
+    return remove(self, 1)
+end
+
 local function last(self)
     -- return the last element into the table
     return self[#self]
@@ -968,6 +1029,7 @@ mt = {
         -- table utils
         max = max,
         min = min,
+        avg = avg,
         sum = sum,
         mul = mul,
         sort = sort,
@@ -981,6 +1043,8 @@ mt = {
         sample = sample,
         shuffle = shuffle,
         reverse = reverse,
+        maximize = maximize,
+        minimize = minimize,
         valueSet = valueSet,
         removeNils = removeNils,
 
@@ -989,6 +1053,7 @@ mt = {
         get = get,
         pop = pop,
         has = has,
+        head = head,
         last = last,
         push = push,
         first = first,
