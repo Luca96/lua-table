@@ -21,7 +21,7 @@ t:each(print)
 
 -- iterators
 -------------------------
--- iterate over int indexes (1, 2, ..., #t)
+-- iterate over int indices (1, 2, ..., #t)
 for i in t:iter() do
   stuff(i)
 end
@@ -70,13 +70,14 @@ local table_without_nils = table_with_nils:removeNils()  -- { 1, 2, { 3 }, 4 }
 local cloned = t:clone()
 
 -- slice a table
-local slice = t:slice(2, 4)  -- { 2, 3, 4 }
+local slice = t:slice(2, 4)  -- { -2, 3, 4 }
+local slice = t:slice(1, -2) -- { 1, -2, 3, 4 }
 
 -- table operators
 -------------------------
 -- simulate a stack
-local stack = Table()
-stack:append(1, 2, 3) --contains: 1, 2, 3
+local stack = Table():append(1, 2, 3)
+print(stack)          -- { 1, 2, 3 }
 print(stack:pop())    --return: 3
 stack:append(4)       --contains: 1, 2, 4
 

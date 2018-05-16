@@ -5,7 +5,7 @@
 - renamed: Table.create to Table.new
 - table utils: added find, keySet, valueSet, avg, minimize and maximize
 - table operators: added has, hasKey and head
-- table init helpers: added ofChars
+- table init helpers: added Table.ofChars
 
 ## (0.3) 05/05/2018:
 - fixed a bug into init function 

@@ -27,6 +27,7 @@ SOFTWARE.
 -------------------------------------------------------------------------------
 local setmetatable = setmetatable 
 local assert = assert 
+local unpack = unpack 
 local select = select 
 local insert = table.insert 
 local remove = table.remove 
@@ -275,7 +276,7 @@ local function slide(table, k)
 end
 
 local function eachi(table, func)
-    -- apply the given function to all elements of the table (int indexes)
+    -- apply the given function to all elements of the table (int indices)
     assert_table_func("eachi", table, func)
 
     local len = #table
@@ -411,7 +412,7 @@ local function reduce(table, base, reduction)
 end
 
 local function flatten(table)
-    -- flattens a nested table (over int indexes)
+    -- flattens a nested table (over int indices)
     assert_table("flatten", table)
 
     local t = {}
@@ -664,12 +665,22 @@ local function slice(table, i, j)
     -- return a portion of the input table that ranges to i from j
     -- nil values are ignored
     assert_table("slice", table)
-
-    j = j or #table
+    local n = #table
+    j = j or n
     i = i or 1
-
     assert_number("slice", i)
     assert_number("slice", j)
+
+    if i < 0 then
+        i = n + 1 + i
+        if i < 1 then i = 1 end
+    end
+
+    if j < 0 then
+        j = n + 1 + j
+        if j < 1 then j = 1 end
+    end
+
     warn_if("slice", i .. " > " .. j, i > j)
 
     local part = {}
@@ -731,7 +742,7 @@ end
 
 local function merge(t1, t2)
     -- return a new table which values are taken by both t1 and t2
-    -- it consider only values over integer indexes.
+    -- it consider only values over integer indices.
     assert_table("merge", t1)
     assert_table("merge", t2)
 
@@ -830,7 +841,7 @@ end
 local function at(self, index, default_value)
     -- returns the element at the given index, if index is negative it starts
     -- counting from the end of the table and then returning the element.
-    -- at works with integer indexes, use get for other key-values (as index).
+    -- at works with integer indices, use get for other key-values (as index).
     -- optionally you can specify a default-value that is returned in case
     -- table[index] is nil.
     assert_number("at", index)
@@ -907,18 +918,12 @@ end
 
 local function has(self, value)
     -- return true if it finds the given value, otherwise returns false
-    return self:find(value) ~= nil
+    return Table.find(self, value) ~= nil
 end
 
 local function hasKey(self, key)
     -- returns true if self[key] is not nil
-    for k, _ in pairs(self) do
-        if k == key then
-            return true
-        end
-    end
-
-    return false
+    return self[key] ~= nil
 end
 
 local function empty(self)
