@@ -1,4 +1,4 @@
-# Lua-Table 0.4
+# Lua-Table 0.5
 Lua tables with superpowers :muscle:
 
 ## Changes
@@ -11,8 +11,28 @@ To install the library just ```clone``` the repo or install via [LuaRocks](https
 ```lua
 local Table = require "luatable"
 
--- create a Table from an old one
+-- constructors
+-------------------------
+-- creates a Table from an old one
 local t = Table { 1, -2, 3, 4, -5 }
+
+-- creates an empty table
+local t1 = Table()
+
+-- creates a table of size 10 filled with zero
+local t2 = Table.zeros(10)
+
+-- creates a table of size 10 filled with one
+local t2 = Table.ones(10)
+
+-- creates a table of characters from a string
+local t3 = Table.ofChars "random string.."
+
+-- creates an table of size ten filled with five
+local t4 = Table.new(10, 5)
+
+-- creates a table of size 10 with an init-function
+local t5 = Table.zeros(10, function(a) return a + 2 end)
 
 -- print all values
 print(t)

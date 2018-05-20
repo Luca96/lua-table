@@ -37,7 +37,8 @@ local tsort  = table.sort
 local format = string.format 
 local random = math.random 
 local floor  = math.floor 
-local abs    = math.abs 
+local abs    = math.abs
+local error  = error 
 local print  = print 
 local pairs  = pairs 
 local ipairs = ipairs 
@@ -95,7 +96,7 @@ end
 -- CLASS
 -------------------------------------------------------------------------------
 local Table = {
-    __VERSION = "0.4",
+    __VERSION = "0.5",
     __AUTHOR  = "Luca Anzalone",
 }
 
@@ -131,6 +132,10 @@ function Table.half(a)
     return a * .5
 end
 
+function Table.double(a)
+    return a * 2
+end
+
 function Table.sqr(a)
     return a * a
 end
@@ -138,8 +143,12 @@ end
 Table.sqrt = math.sqrt 
 Table.abs  = abs
 
-function Table.double(a)
-    return a * 2
+function Table.increase(a)
+    return a + 1
+end
+
+function Table.decrease(a)
+    return a - 1
 end
 
 function Table.positive(a)
@@ -150,11 +159,35 @@ function Table.negative(a)
    return a < 0
 end
 
-function Table.asc_compare(a, b)
+function Table.itself(a)
+    return a
+end
+
+function Table.identity(a)
+    return a == a
+end
+
+function Table.eq(a, b)
+    return a == b
+end
+
+function Table.neq(a, b)
+    return a ~= b
+end
+
+function Table.gt(a, b)
+    return a > b
+end
+
+function Table.lt(a, b)
+    return a < b
+end
+
+function Table.ge(a, b)
     return a >= b
 end
 
-function Table.dsc_compare(a, b)
+function Table.le(a, b)
     return a <= b
 end
 -------------------------------------------------------------------------------
@@ -275,25 +308,25 @@ local function slide(table, k)
     end
 end
 
-local function eachi(table, func)
+local function eachi(table, func, ...)
     -- apply the given function to all elements of the table (int indices)
     assert_table_func("eachi", table, func)
 
     local len = #table
 
     for i = 1, len do
-        func(table[i])
+        func(table[i], ...)
     end
 
     return table
 end
 
-local function each(table, func)
+local function each(table, func, ...)
     -- apply the given function on all (key, value) pairs of table
     assert_table_func("each", table, func)
 
     for k, v in pairs(table) do
-        func(k, v)
+        func(k, v, ...)
     end
 
     return table
@@ -345,7 +378,7 @@ end
 -------------------------------------------------------------------------------
 -- Functional utils
 -------------------------------------------------------------------------------
-local function map(table, transform)
+local function map(table, transform, ...)
     -- returns a new table which elements are the result of applying the transformation function
     assert_table_func("map", table, transform)
 
@@ -353,13 +386,13 @@ local function map(table, transform)
     local map = {}
 
     for i = 1, len do
-        map[i] = transform(table[i])
+        map[i] = transform(table[i], ...)
     end
 
     return Table(map)
 end
 
-local function accept(table, criteria)
+local function accept(table, criteria, ...)
     -- accept elements that matches the criteria
     assert_table_func("accept", table, criteria)
 
@@ -369,7 +402,7 @@ local function accept(table, criteria)
     for i = 1, len do
         local item = table[i]
 
-        if criteria(item) then
+        if criteria(item, ...) then
             subset[k] = item
             k = k + 1
         end
@@ -378,7 +411,7 @@ local function accept(table, criteria)
     return Table(subset)
 end
 
-local function reject(table, criteria)
+local function reject(table, criteria, ...)
     -- remove elements that matches the criteria
     assert_table_func("reject", table, criteria)
 
@@ -388,7 +421,7 @@ local function reject(table, criteria)
     for i = 1, len do
         local item = table[i]
 
-        if not criteria(item) then
+        if not criteria(item, ...) then
             subset[k] = item
             k = k + 1
         end
@@ -397,7 +430,7 @@ local function reject(table, criteria)
     return Table(subset)
 end
 
-local function reduce(table, base, reduction)
+local function reduce(table, base, reduction, ...)
     -- reduce a table into a single value, base is the initial value
     assert_table_func("reduce", table, reduction)
 
@@ -405,7 +438,7 @@ local function reduce(table, base, reduction)
     local len = #table
 
     for i = 1, len do
-        value = reduction(value, table[i])
+        value = reduction(value, table[i], ...)
     end
 
     return value
@@ -497,7 +530,7 @@ end
 local function max(table, comparator)
     -- return the biggest value of the input based, on a comparator
     assert_table("max", table)
-    comparator = comparator or Table.asc_compare
+    comparator = comparator or Table.ge
 
     local max = table[1]
     local len = #table
@@ -546,17 +579,17 @@ local function avg(table)
     return avg / len
 end
 
-local function maximize(table, func)
+local function maximize(table, func, ...)
     -- return the value of the table that maximize func
     assert_table_func("maximize", table, func)
 
     local max_val = table[1]
-    local max_fun = func(max_val)
+    local max_fun = func(max_val, ...)
     local len = #table
 
     for i = 2, len do
         local val  = table[i]
-        local fval = func(val)
+        local fval = func(val, ...)
 
         if fval > max_fun then
             max_fun = fval
@@ -567,17 +600,17 @@ local function maximize(table, func)
     return max_val
 end
 
-local function minimize(table, func)
+local function minimize(table, func, ...)
     -- return the value of the table that minimize func
     assert_table_func("minimize", table, func)
 
     local min_val = table[1]
-    local min_fun = func(min_val)
+    local min_fun = func(min_val, ...)
     local len = #table
 
     for i = 2, len do
         local val  = table[i]
-        local fval = func(val)
+        local fval = func(val, ...)
 
         if fval < min_fun then
             min_fun = fval
@@ -766,8 +799,7 @@ local function sort(table, comparator)
     -- sort the table according to the comparator function
     assert_table_func("sort", table, comparator)
 
-
-    comparator = comparator or asc_compare
+    comparator = comparator or Table.ge
     tsort(table, comparator)
 
     return table
@@ -964,15 +996,27 @@ function Table.ones(size)
     return Table(t)
 end
 
-function Table.new(size, init_val)
-    -- fill the table with a custom init-value
+function Table.new(size, init, ...)
+    -- fill the table with a custom init value or function
     assert_number("new", size)
 
     local t = {}
 
-    for i = 1, size do
-        t[i] = init_val
-    end
+    if type(init) == "function" then
+        
+        for i = 1, size do
+            t[i] = init(i, ...)
+        end
+
+    elseif type(init) == "number" then
+        
+        for i = 1, size do
+            t[i] = init
+        end
+
+    else
+        error(err.." Table.new(): require an init value or function!")
+    end        
 
     return Table(t)
 end

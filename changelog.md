@@ -1,5 +1,12 @@
 # Lua-Table Changelog
 
+## (0.5) 20/05/2018:
+- new comparison operators: eq, neq, gt, lt, ge, le 
+- new operators: increase, decrease, itself and identity
+- removed operators: asc_compare and desc_compare (replaced by Table.ge and Table.le)
+- added optional varargs in: each, eachi, map, accept, reject, reduce, maximize and minimize
+- edited Table.new: now tables can be created with a value provided by an init-function 
+
 ## (0.4) 12/05/2018:
 - change into table utils: key and values are now iterators
 - renamed: Table.create to Table.new
