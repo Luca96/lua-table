@@ -238,11 +238,12 @@ local function range(table, start, count, step)
     return function()
 
         if c > 0 then
+            local k = i
             local v = table[i]
             i = i + step
             c = c - 1
 
-            return v
+            return k, v
         end
     end
 end
@@ -259,10 +260,11 @@ local function step(table, start, step)
     local i = start
 
     return function()
+        local k = i
         local v = table[i]
         i = i + step
 
-        return v
+        return k, v
     end
 end
 
@@ -749,13 +751,8 @@ local function clone(table)
 end
 
 local function pack(...)
-    -- pack a sequence of elements into a single table (keeps nils)
-    return Table { select(1, ...) }
-end
-
-local function pack2(...)
     -- pack a sequence of elements into a single table (whithout nils)
-    local temp = { select(1, ...) }
+    local temp = { ... }
     local data = {}
     local n, k = maxlen(temp), 1
 
@@ -893,27 +890,37 @@ local function get(self, key, default_value)
     return self[key] or default_value
 end
 
-local function append(self, ...)
+local function append(self, item, ...)
     -- insert one or more elements at the end of the table
-    warn_nil("append", ...)
+    warn_nil("append", item)
 
-    local sequence = { select(1, ...) }
+    local len = #self
+    self[len + 1] = item
 
-    for i = 1, #sequence do
-        insert(self, sequence[i])
+    if ... then
+        len = len + 1
+        local sequence = { ... }
+
+        for i = 1, #sequence do
+            self[len + i] = sequence[i]
+        end
     end
 
     return self
 end
 
-local function push(self, ...)
+local function push(self, item, ...)
     -- insert one or more elements at the begin of the table
-    warn_nil("push", ...)
+    warn_nil("push", item)
 
-    local sequence = { select(1, ...) }
+    insert(self, 1, item)
 
-    for i = 1, #sequence do
-        insert(self, 1, sequence[i])
+    if ... then
+        local sequence = { ... }
+
+        for i = 1, #sequence do
+            insert(self, 1, sequence[i])
+        end
     end
 
     return self
@@ -1041,7 +1048,7 @@ end
 local function init(self, ...)
 
     if arg then
-        self = { select(1, ...) }
+        self = { ... }
 
         if #self == 1 and type(self[1]) == "table" then
             self = self[1]
@@ -1084,7 +1091,6 @@ mt = {
         sort = sort,
         find = find,
         pack = pack,
-        pack2 = pack2,
         clone = clone,
         slice = slice,
         merge = merge,
