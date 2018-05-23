@@ -683,14 +683,13 @@ local function reverse(table)
     -- return a table which values are in opposite order
     assert_table("reverse", table)
 
-    local n = floor(#table * .5)
+    local n = #table 
+    local m = floor(n * .5)
 
-    for i = 1, n do
-      local k = n - i + 1
-        local x = table[i]
-        local y = table[k]
+    for i = 1, m do
+        local k = n - i + 1
 
-        table[i], table[k] = y, x
+        table[i], table[k] = table[k], table[i]
     end
 
     return table
