@@ -96,12 +96,12 @@ end
 -- CLASS
 -------------------------------------------------------------------------------
 local Table = {
-    __VERSION = "0.5",
+    __VERSION = "0.6",
     __AUTHOR  = "Luca Anzalone",
 }
 
 function Table.methods()
-    -- print all module methods name
+-- print all module methods name
     local t = getmetatable(Table).__index
 
     for k, _ in pairs(t) do
@@ -194,7 +194,7 @@ end
 -- Iterator and for-each
 -------------------------------------------------------------------------------
 local function iter(table)
-    -- build an iterator through the given table
+-- build an iterator through the given table
     assert_table("iter", table)
 
     local i = 1
@@ -208,7 +208,7 @@ local function iter(table)
 end
 
 local function inverse(table)
-    -- build an iterator that iterate, through the table, in reversed order
+-- build an iterator that iterate, through the table, in reversed order
     assert_table("inverse", table)
 
     local n = #table
@@ -222,15 +222,15 @@ local function inverse(table)
 end
 
 local function range(table, start, count, step)
-    -- build a range iterator over a table
+-- build a range iterator over a table
+    step  = step  or 1
+    count = count or 0
+    start = start or 1
+
     assert_table ("range", table)
     assert_number("range", start)
     assert_number("range", count)
     assert_number("range", step)
-
-    step  = step  or 1
-    count = count or 0
-    start = start or 1
 
     local i = start
     local c = count
@@ -249,13 +249,13 @@ local function range(table, start, count, step)
 end
 
 local function step(table, start, step)
-    -- build a step iterator over a table
+-- build a step iterator over a table
+    step  = step  or 1
+    start = start or 1
+
     assert_table ("step", table)
     assert_number("range", start)
     assert_number("step", step)
-
-    step  = step  or 1
-    start = start or 1
 
     local i = start
 
@@ -269,8 +269,8 @@ local function step(table, start, step)
 end
 
 local function group(table, k)
-    -- iterate through table by grouping values together (group size is k)
-    -- in each iteration, the iterator will return a k-tuple
+-- iterate through table by grouping values together (group size is k)
+-- in each iteration, the iterator will return a k-tuple
     assert_table("group", table)
     assert_true ("group", "k must be > 0!", (type(k) == "number") and (k > 0))
 
@@ -290,8 +290,8 @@ local function group(table, k)
 end
 
 local function slide(table, k)
-    -- iterate through table like a sliding-window of size k
-    -- in each iteration, the iterator will return a k-tuple
+-- iterate through table like a sliding-window of size k
+-- in each iteration, the iterator will return a k-tuple
     assert_table("slide", table)
     assert_true ("slide", "k must be > 0!", (type(k) == "number") and (k > 0))
     
@@ -311,7 +311,7 @@ local function slide(table, k)
 end
 
 local function eachi(table, func, ...)
-    -- apply the given function to all elements of the table (int indices)
+-- apply the given function to all elements of the table (int indices)
     assert_table_func("eachi", table, func)
 
     local len = #table
@@ -324,7 +324,7 @@ local function eachi(table, func, ...)
 end
 
 local function each(table, func, ...)
-    -- apply the given function on all (key, value) pairs of table
+-- apply the given function on all (key, value) pairs of table
     assert_table_func("each", table, func)
 
     for k, v in pairs(table) do
@@ -335,7 +335,7 @@ local function each(table, func, ...)
 end
 
 local function keys(table)
-    -- iterate over all table keys 
+-- iterate over all table keys 
     assert_table("keys", table)
 
     local keys = {}
@@ -357,7 +357,7 @@ local function keys(table)
 end
 
 local function values(table)
-    -- iterate over all table values
+-- iterate over all table values
     assert_table("values", table)
 
     local values = {}
@@ -381,7 +381,7 @@ end
 -- Functional utils
 -------------------------------------------------------------------------------
 local function map(table, transform, ...)
-    -- returns a new table which elements are the result of applying the transformation function
+-- returns a new table which elements are the result of applying the transformation function
     assert_table_func("map", table, transform)
 
     local len = #table
@@ -395,7 +395,7 @@ local function map(table, transform, ...)
 end
 
 local function accept(table, criteria, ...)
-    -- accept elements that matches the criteria
+-- accept elements that matches the criteria
     assert_table_func("accept", table, criteria)
 
     local len, k = #table, 1
@@ -414,7 +414,7 @@ local function accept(table, criteria, ...)
 end
 
 local function reject(table, criteria, ...)
-    -- remove elements that matches the criteria
+-- remove elements that matches the criteria
     assert_table_func("reject", table, criteria)
 
     local len, k = #table, 1
@@ -433,7 +433,7 @@ local function reject(table, criteria, ...)
 end
 
 local function reduce(table, base, reduction, ...)
-    -- reduce a table into a single value, base is the initial value
+-- reduce a table into a single value, base is the initial value
     assert_table_func("reduce", table, reduction)
 
     local value = base
@@ -447,7 +447,7 @@ local function reduce(table, base, reduction, ...)
 end
 
 local function flatten(table)
-    -- flattens a nested table (over int indices)
+-- flattens a nested table (over int indices)
     assert_table("flatten", table)
 
     local t = {}
@@ -477,8 +477,8 @@ local function flatten(table)
 end
 
 local function flatten2(table)
-    -- flattens a nested table (over all key-value pairs)
-    -- flatten2 is slower than flatten
+-- flattens a nested table (over all key-value pairs)
+-- flatten2 is slower than flatten
     assert_table("flatten2", table)
 
     local t = {}
@@ -508,7 +508,7 @@ end
 -- Table utils
 -------------------------------------------------------------------------------
 local function removeNils(table)
-    -- returns a new table without nils along all key-value pairs (even nested) 
+-- returns a new table without nils along all key-value pairs (even nested) 
     assert_table("removeNils", table)
 
     local t, i = {}, 1
@@ -530,7 +530,7 @@ local function removeNils(table)
 end
 
 local function max(table, comparator)
-    -- return the biggest value of the input based, on a comparator
+-- return the biggest value of the input based, on a comparator
     assert_table("max", table)
     comparator = comparator or Table.ge
 
@@ -549,7 +549,7 @@ local function max(table, comparator)
 end
 
 local function min(table, comparator)
-    -- return the smallest value of the input, based on a comparator
+-- return the smallest value of the input, based on a comparator
     assert_table("min", table)
     comparator = comparator or Table.dsc_compare
 
@@ -568,7 +568,7 @@ local function min(table, comparator)
 end
 
 local function avg(table)
-    -- return the average value of the input
+-- return the average value of the input
     assert_table("avg", table)
 
     local avg = table[1]
@@ -582,7 +582,7 @@ local function avg(table)
 end
 
 local function maximize(table, func, ...)
-    -- return the value of the table that maximize func
+-- return the value of the table that maximize func
     assert_table_func("maximize", table, func)
 
     local max_val = table[1]
@@ -603,7 +603,7 @@ local function maximize(table, func, ...)
 end
 
 local function minimize(table, func, ...)
-    -- return the value of the table that minimize func
+-- return the value of the table that minimize func
     assert_table_func("minimize", table, func)
 
     local min_val = table[1]
@@ -624,7 +624,7 @@ local function minimize(table, func, ...)
 end
 
 local function sum(table)
-    -- returns the sum of all elements of the table
+-- returns the sum of all elements of the table
     assert_table("sum", table)
 
     local len = #table
@@ -638,7 +638,7 @@ local function sum(table)
 end
 
 local function mul(table)
-    -- returns the product of all elements of the table
+-- returns the product of all elements of the table
     assert_table("mul", table)    
 
     local len = #table
@@ -652,7 +652,7 @@ local function mul(table)
 end
 
 local function sample(table)
-    -- returns a random element of the table
+-- returns a random element of the table
     assert_table("sample", table)
 
     local size = #table
@@ -665,7 +665,7 @@ local function sample(table)
 end
 
 local function shuffle(table)
-    -- mix the values inside the given table
+-- mix the values inside the given table
     assert_table("shuffle", table)
 
     local len = #table
@@ -680,7 +680,7 @@ local function shuffle(table)
 end
 
 local function reverse(table)
-    -- return a table which values are in opposite order
+-- return a table which values are in opposite order
     assert_table("reverse", table)
 
     local n = #table 
@@ -696,8 +696,8 @@ local function reverse(table)
 end
 
 local function slice(table, i, j)
-    -- return a portion of the input table that ranges to i from j
-    -- nil values are ignored
+-- return a portion of the input table that ranges to i from j
+-- nil values are ignored
     assert_table("slice", table)
     local n = #table
     j = j or n
@@ -733,7 +733,7 @@ local function slice(table, i, j)
 end
 
 local function clone(table)
-    -- clone each key-value of the input table into a new table
+-- clone each key-value of the input table into a new table
     assert_table("clone", table)
     
     local copy = {} 
@@ -750,7 +750,7 @@ local function clone(table)
 end
 
 local function pack(...)
-    -- pack a sequence of elements into a single table (whithout nils)
+-- pack a sequence of elements into a single table (whithout nils)
     local temp = { ... }
     local data = {}
     local n, k = maxlen(temp), 1
@@ -770,8 +770,8 @@ local function pack(...)
 end
 
 local function merge(t1, t2)
-    -- return a new table which values are taken by both t1 and t2
-    -- it consider only values over integer indices.
+-- return a new table which values are taken by both t1 and t2
+-- it consider only values over integer indices.
     assert_table("merge", t1)
     assert_table("merge", t2)
 
@@ -791,8 +791,60 @@ local function merge(t1, t2)
     return Table(merged)
 end
 
+local function difference(t1, t2)
+-- return a new table which values are in t1 but not in t2
+    assert_table("difference", t1)
+    assert_table("difference", t2)
+
+    local diff = {}
+    local keys = {}
+    local size = #t1
+    local k = 1
+    
+    for _, v in ipairs(t2) do
+        keys[v] = true
+    end
+
+    for i = 1, size do
+        local v = t1[i]
+
+        if not keys[v] then
+            diff[k] = v
+            k = k + 1
+        end
+    end
+    
+    return Table(diff)
+end
+
+local function intersect(t1, t2)
+-- return a new table which values are both in t1 and t2
+    assert_table("intersect", t1)
+    assert_table("intersect", t2)
+
+    local kset = {}
+    local size = #t1
+    local t = {}
+    local k = 1
+
+    for _, v in ipairs(t2) do
+        kset[v] = true
+    end
+
+    for i = 1, size do
+        local v = t1[i]
+
+        if kset[v] then
+            t[k] = v
+            k = k + 1
+        end
+    end
+
+    return Table(t)
+end
+
 local function sort(table, comparator)
-    -- sort the table according to the comparator function
+-- sort the table according to the comparator function
     assert_table_func("sort", table, comparator)
 
     comparator = comparator or Table.ge
@@ -802,8 +854,8 @@ local function sort(table, comparator)
 end
 
 local function find(table, value)
-    -- find a value inside the given table, it returns the value's index
-    -- if finded otherwise it return nil
+-- find a value inside the given table, it returns the value's index
+-- if finded otherwise it return nil
     assert_table("find", table)
 
     local n = #table
@@ -817,30 +869,95 @@ local function find(table, value)
     return nil
 end
 
-local function keySet(table)
-    -- return a table that contains all the keys of the given table
-    local keys = {}
+local function unique(table)
+-- remove all duplicates in table
+    assert_table("unique", table)
+
+    local tmp, t = {}, {}
+    local len, k = #table, 1
+
+    for i = 1, len do
+        local v = table[i]
+
+        if tmp[v] == nil then
+            tmp[v] = true
+            t[k] = v
+            k = k + 1
+        end
+    end
+
+    return Table(t)
+end
+
+local function keyList(table)
+-- return a list of keys of the given table
+    assert_table("keyList", table)
+
+    local list = {}
+    local i = 1
+
+    for k, _ in pairs(table) do
+        list[i] = k
+        i = i + 1
+    end
+
+    return Table(list)
+end
+
+local function valueList(table)
+-- return a list of values of the given table
+    assert_table("valueList", table)
+
+    local list = {}
     local k = 1
 
-    for key in Table.keys(table) do
-        keys[k] = key
+    for _, v in pairs(table) do
+        list[k] = v
         k = k + 1
     end
 
-    return Table(keys)
+    return Table(list)
+end
+
+local function valueSequence(table)
+-- return a sequence of values, instead of valueList it consider only 
+-- elements from index 1 to #table (values along keys are ignored)
+    assert_table("valueSequence", table)
+
+    local seq = {}
+    local len = #table
+
+    for i = 1, len do
+        seq[i] = table[i]
+    end
+
+    return Table(seq)
+end
+
+local function keySet(table)
+-- return a set of keys of the given table
+    assert_table("keySet", table)
+
+    local set = {}
+
+    for k, _ in pairs(table) do
+        set[k] = true
+    end
+
+    return Table(set)
 end
 
 local function valueSet(table)
-    -- return a table that contains all the values of the given table
-    local values = {}
-    local k = 1
+-- return a set of values of the given table
+    assert_table("valueSet", table)
 
-    for val in Table.values(table) do
-        values[k] = val
-        k = k + 1
-    end 
+    local set = {}
 
-    return Table(values)
+    for _, v in pairs(table) do
+        set[v] = true
+    end
+
+    return Table(set)
 end
 
 local function tostring(table, tab)
@@ -867,11 +984,11 @@ end
 -- table operators
 -------------------------------------------------------------------------------
 local function at(self, index, default_value)
-    -- returns the element at the given index, if index is negative it starts
-    -- counting from the end of the table and then returning the element.
-    -- at works with integer indices, use get for other key-values (as index).
-    -- optionally you can specify a default-value that is returned in case
-    -- table[index] is nil.
+-- returns the element at the given index, if index is negative it starts
+-- counting from the end of the table and then returning the element.
+-- at works with integer indices, use get for other key-values (as index).
+-- optionally you can specify a default-value that is returned in case
+-- table[index] is nil.
     assert_number("at", index)
 
     -- positive index
@@ -884,13 +1001,13 @@ local function at(self, index, default_value)
 end
 
 local function get(self, key, default_value)
-    -- returns the element at the given key, if element is nil it returns an 
-    -- optional default value
+-- returns the element at the given key, if element is nil it returns an 
+-- optional default value
     return self[key] or default_value
 end
 
 local function append(self, item, ...)
-    -- insert one or more elements at the end of the table
+-- insert one or more elements at the end of the table
     warn_nil("append", item)
 
     local len = #self
@@ -909,7 +1026,7 @@ local function append(self, item, ...)
 end
 
 local function push(self, item, ...)
-    -- insert one or more elements at the begin of the table
+-- insert one or more elements at the begin of the table
     warn_nil("push", item)
 
     insert(self, 1, item)
@@ -926,27 +1043,27 @@ local function push(self, item, ...)
 end
 
 local function pop(self)
-    -- remove and return the last element into the table
+-- remove and return the last element into the table
     return remove(self, #self)
 end
 
 local function head(self)
-    -- remove and return the first element into the table
+-- remove and return the first element into the table
     return remove(self, 1)
 end
 
 local function last(self)
-    -- return the last element into the table
+-- return the last element into the table
     return self[#self]
 end
 
 local function first(self)
-    -- return the first value into the table
+-- return the first value into the table
     return self[1]
 end
 
 local function clear(self)
-    -- empties the given table
+-- empties the given table
     local n = #self
 
     for i = 1, n do
@@ -955,29 +1072,29 @@ local function clear(self)
 end
 
 local function has(self, value)
-    -- return true if it finds the given value, otherwise returns false
+-- return true if it finds the given value, otherwise returns false
     return Table.find(self, value) ~= nil
 end
 
 local function hasKey(self, key)
-    -- returns true if self[key] is not nil
+-- returns true if self[key] is not nil
     return self[key] ~= nil
 end
 
 local function empty(self)
-    -- check if the table has 0 elements, it not consider keys.
+-- check if the table has 0 elements, it not consider keys.
     return #self == 0
 end
 
 local function notEmpty(self)
-    -- check if the table has at least one elements, it not consider keys.
+-- check if the table has at least one elements, it not consider keys.
     return #self > 0
 end
 -------------------------------------------------------------------------------
 -- table init helpers
 -------------------------------------------------------------------------------
 function Table.zeros(size)
-    -- fill the table with zeros
+-- fill the table with zeros
     assert_number("zeros", size)
 
     local t = {}
@@ -990,7 +1107,7 @@ function Table.zeros(size)
 end
 
 function Table.ones(size)
-    -- fill the table with ones
+-- fill the table with ones
     assert_number("ones", size)
 
     local t = {}
@@ -1003,33 +1120,28 @@ function Table.ones(size)
 end
 
 function Table.new(size, init, ...)
-    -- fill the table with a custom init value or function
+-- fill the table with a custom init value or function
     assert_number("new", size)
 
     local t = {}
 
     if type(init) == "function" then
-        
+
         for i = 1, size do
             t[i] = init(i, ...)
         end
-
-    elseif type(init) == "number" then
-        
+    else        
         for i = 1, size do
             t[i] = init
         end
-
-    else
-        error(err.." Table.new(): require an init value or function!")
     end        
 
     return Table(t)
 end
 
 function Table.ofChars(word)
-    -- create a table from the given string, which will contains every single
-    -- character of the input string
+-- create a table from the given string, which will contains every single
+-- character of the input string
     assert_true("ofChars", "require a valid string!", type(word) == "string")
 
     local t = Table()
@@ -1093,20 +1205,27 @@ mt = {
         clone = clone,
         slice = slice,
         merge = merge,
+        unique = unique,
         keySet = keySet,
         sample = sample,
         shuffle = shuffle,
         reverse = reverse,
+        keyList = keyList,
         maximize = maximize,
         minimize = minimize,
         valueSet = valueSet,
+        valueList = valueList,
+        intersect = intersect,
+        difference = difference,
         removeNils = removeNils,
+        valueSequence = valueSequence,
 
         -- table operators
         at  = at,
         get = get,
         pop = pop,
         has = has,
+        add = insert,
         head = head,
         last = last,
         push = push,

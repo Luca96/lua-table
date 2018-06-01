@@ -1,6 +1,12 @@
 # Lua-Table Changelog
 
-## (0.5) 23/05/2018:
+## (0.6) 31/05/2018:
+- new table operator: add
+- new table utils: valueList, keyList, valueSequence, difference, interection, and unique
+- edited valueSet and keySet: now both return a set (not a list of elements)
+- fixed Table.new (now init-value can be a string, number, table, ecc..)
+
+## (0.5) 24/05/2018:
 - new comparison operators: eq, neq, gt, lt, ge, le 
 - new operators: increase, decrease, itself and identity
 - removed operators: asc_compare and desc_compare (replaced by Table.ge and Table.le)

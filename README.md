@@ -1,4 +1,4 @@
-# Lua-Table 0.5
+# Lua-Table 0.6
 Lua tables with superpowers :muscle:
 
 ## Changes
@@ -28,11 +28,11 @@ local t2 = Table.ones(10)
 -- creates a table of characters from a string
 local t3 = Table.ofChars "random string.."
 
--- creates an table of size ten filled with five
+-- creates a table of size ten filled with five
 local t4 = Table.new(10, 5)
 
 -- creates a table of size 10 with an init-function
-local t5 = Table.zeros(10, function(a) return a + 2 end)
+local t5 = Table.new(10, function(a) return a + 2 end)
 
 -- print all values
 print(t)
@@ -83,8 +83,8 @@ local random_value = t:sample()
 local shuffled = t:shuffle()
 
 -- remove nil values from a table
-local table_with_nils = Table { 1, nil, 2, { nil, 3 }, nil, 4 }
-local table_without_nils = table_with_nils:removeNils()  -- { 1, 2, { 3 }, 4 }
+local twith_nils = Table { 1, nil, 2, { nil, 3 }, nil, 4 }
+local twithout_nils = twith_nils:removeNils()  -- { 1, 2, { 3 }, 4 }
 
 -- clone a table
 local cloned = t:clone()
