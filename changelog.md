@@ -1,8 +1,20 @@
 # Lua-Table Changelog
 
-## (0.6) 31/05/2018:
+## (0.7) 16/07/2018:
+- code rewriting: now the library extends the global table object
+- removed step iterator (use range instead)
+- flatten is renamed to flat (and re-implemented)
+- flatten2 is removed
+- added table.flatmap()
+- removeNils renamed to purify
+- removed some table operators: s_empy, s_nempty, s_len, t_len, t_maxlen
+- some utils like: sum, mul are moved to operators
+- difference renamed into negation
+
+## (0.6) 01/06/2018:
 - new table operator: add
-- new table utils: valueList, keyList, valueSequence, difference, interection, and unique
+- new table utils: valueList, keyList, valueSequence, difference, interection, 
+- unique and occurrences.
 - edited valueSet and keySet: now both return a set (not a list of elements)
 - fixed Table.new (now init-value can be a string, number, table, ecc..)
 
