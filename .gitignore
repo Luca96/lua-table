@@ -1,2 +1,4 @@
 **/src/test.lua
+**/src/tests/
 **/src/luatable-dev.lua
+**/src/luatable-emb.lua
