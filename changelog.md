@@ -10,6 +10,7 @@
 - removed some table operators: s_empy, s_nempty, s_len, t_len, t_maxlen
 - some utils like: sum, mul are moved to operators
 - difference renamed into negation
+- added table.union()
 
 ## (0.6) 01/06/2018:
 - new table operator: add

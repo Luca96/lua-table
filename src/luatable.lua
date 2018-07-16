@@ -826,12 +826,31 @@ end
 -----------------------------------------------------------------------------------------
 -- set utility
 -----------------------------------------------------------------------------------------
--- TODO: table.union
+function table.union(t1,  t2)
+-- return a new table that is the union of t1 and t2
+   assert_table("union", t1)
+   assert_table("union", t2)
+
+   local tb = table()
+   local k  = 1 
+
+   for i = 1, #t1 do
+      tb[k] = t1[i]
+      k = k + 1
+   end
+
+   for i = 1, #t2 do
+      tb[k] = t2[i]
+      k = k + 1
+   end
+
+   return tb:unique() 
+end
 
 function table.negation(t1, t2)
 -- return a new table which values are in t1 but not in t2
-   assert_table("complement", t1)
-   assert_table("complement", t2)
+   assert_table("negation", t1)
+   assert_table("negation", t2)
 
    local diff = table()
    local keys = {}
