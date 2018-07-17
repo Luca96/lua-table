@@ -163,11 +163,11 @@ function table.pow(a, b)
    return a ^ b
 end
 
-function table.increment(a)
+function table.increase(a)
    return a + 1
 end
 
-function table.decrement(a)
+function table.decrease(a)
    return a - 1
 end
 
@@ -1100,6 +1100,10 @@ function table.ofChars(string)
 
    return t
 end
+-----------------------------------------------------------------------------------------
+-- aliases:
+-----------------------------------------------------------------------------------------
+
 -----------------------------------------------------------------------------------------
 return setmetatable(table, { __call = function(t, ...) return table.new(...) end })
 -----------------------------------------------------------------------------------------
