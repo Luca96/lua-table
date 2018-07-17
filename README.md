@@ -1,3 +1,5 @@
+<p align="left"><img src="logo/horizontal.png" alt="lua-table" height="100px"></p>
+
 # Lua-Table 0.7
 Lua tables with superpowers :muscle:
 
