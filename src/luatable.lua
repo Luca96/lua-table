@@ -51,42 +51,42 @@ local err  = "\27[1;31mError at\27[0m"
 
 local function assert_init(t)
     assert(type(t) == "table", 
-        format("%s Table.init(): optional parameter <table> must be a not-nil table!", 
+        format("%s table.init(): optional parameter <table> must be a not-nil table!", 
             err, msg))
 end
 
 local function assert_table(msg, t)
     assert(type(t) == "table", 
-        format("%s Table.%s(): parameter <table> must be a not-nil table!", 
+        format("%s table.%s(): parameter <table> must be a not-nil table!", 
             err, msg))
 end
 
 local function assert_table_func(msg, t, f)
     assert(type(t) == "table", 
-        format("%s Table.%s(): require a not-nil table!", err, msg))
+        format("%s table.%s(): require a not-nil table!", err, msg))
 
     assert(type(f) == "function", 
-        format("%s Table.%s(): require a not-nil function!", err, msg))
+        format("%s table.%s(): require a not-nil function!", err, msg))
 end
 
 local function assert_number(fn, num)
     assert(type(num) == "number", 
-        format("%s Table.%s(): require a number!", err, fn))
+        format("%s table.%s(): require a number!", err, fn))
 end
 
 local function assert_true(f, msg, test)
-    assert(test, format("%s Table.%s(): %s", err, f, msg))
+    assert(test, format("%s table.%s(): %s", err, f, msg))
 end
 
 local function warn_nil(fn, value)
     if value == nil then
-        print(format("%s %s Table.%s(): nil value", term, warn, fn))
+        print(format("%s %s table.%s(): nil value", term, warn, fn))
     end
 end
 
 local function warn_if(f, msg, test)
     if test then
-        print(format("%s %s Table.%s(): %s", term, warn, f, msg))
+        print(format("%s %s table.%s(): %s", term, warn, f, msg))
     end
 end
 -----------------------------------------------------------------------------------------
@@ -102,7 +102,10 @@ function table.tostring(t, tab)
    local i = 2
 
    for k, v in pairs(t) do
-      if type(v) == "table" then
+      if v == nil then
+         v = ''
+         
+      elseif type(v) == "table" then
          b[i] = format(tab .. "k: %s, v: %s", k, table.tostring(v, tab .. "  "))
 
       elseif type(v) ~= "userdata" then
@@ -461,7 +464,7 @@ function table.reject(t, criteria, ...)
 end
 
 function table.flat(t)
--- flattens a nested table (over int indices)
+-- flattens a nested table (over int indices - use table.deepflat instead)
    assert_table("flat", t)
 
    local queque = { t }
@@ -471,12 +474,40 @@ function table.flat(t)
    local k = 1
 
    while base <= top do
-      local item = queque[base]
+      local items = queque[base]
       base = base + 1
 
-      for i = 1, #item do
-         local v = item[i]
+      for i = 1, #items do
+         local v = items[i]
 
+         if type(v) == "table" then
+            top = top + 1
+            queque[top] = v
+         else
+            result[k] = v
+            k = k + 1
+         end
+      end
+   end
+
+   return result
+end
+
+function table.deepflat(t)
+-- flattens a nested table over all key-value pairs
+   assert_table("deepflat", t)
+
+   local queque = { t }
+   local result = table()
+   local base = 1
+   local top  = 1
+   local k = 1
+
+   while base <= top do
+      local items = queque[base]
+      base = base + 1
+
+      for _, v in pairs(items) do
          if type(v) == "table" then
             top = top + 1
             queque[top] = v
@@ -730,7 +761,7 @@ function table.clone(t)
       if type(v) == "table" then
          v = table.clone(v)
       end
-           
+      
       copy[k] = v
    end
 
@@ -823,6 +854,32 @@ function table.valueSequence(t)
 
    return seq
 end
+
+function table.equal(t1, t2, deep)
+-- check if t1 contains the same elements contained in t2, if deep is true
+-- the equality is spread among all key-value pairs (so not only to int indices)
+   deep = deep or false
+   assert_table("equal", t1)
+   assert_table("equal", t2)
+
+   local v1 = deep and table.deepflat(t1) or table.flat(t1) 
+   local v2 = deep and table.deepflat(t2) or table.flat(t2)
+   local l1 = #v1
+   local l2 = #v2
+
+   if l1 == l2 then
+      -- compare each values
+      for i = 1, l1 do
+         if v1[i] ~= v2[i] then
+            return false
+         end
+      end
+
+      return true
+   end
+
+   return false
+end
 -----------------------------------------------------------------------------------------
 -- set utility
 -----------------------------------------------------------------------------------------
@@ -880,7 +937,7 @@ function table.intersect(t1, t2)
 
    local set = {}
    local len = #t1
-   local t = table
+   local t = table()
    local k = 1
 
    for _, v in ipairs(t2) do
@@ -925,7 +982,7 @@ function table.valueSet(t)
    return set
 end
 -----------------------------------------------------------------------------------------
--- table operators (no table check!)
+-- table operators (no table check on self!)
 -----------------------------------------------------------------------------------------
 function table:at(index, default)
 -- returns the element at the given index, if index is negative it starts
@@ -1101,9 +1158,13 @@ function table.ofChars(string)
    return t
 end
 -----------------------------------------------------------------------------------------
--- aliases:
+-- operator overload
 -----------------------------------------------------------------------------------------
-
+mt.__eq  = table.equal
+mt.__add = table.union
+mt.__sub = table.negation
+mt.__mul = table.intersect
+mt.__concat = table.merge
 -----------------------------------------------------------------------------------------
 return setmetatable(table, { __call = function(t, ...) return table.new(...) end })
 -----------------------------------------------------------------------------------------

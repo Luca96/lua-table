@@ -1,4 +1,4 @@
-<p align="left"><img src="logo/horizontal.png" alt="lua-table" height="100px"></p>
+<p align="center"><img src="logo/vertical.png" alt="lua-table" height="100px"></p>
 
 # Lua-Table 0.7
 Lua tables with superpowers :muscle:
@@ -39,5 +39,22 @@ tb = table.unique(tb)
 tb:clear()
 tb:append(4, 5, 6)
 tb:push(1, 2, 3)
+
+-- table equality
+local t1 = { 1, 2, 3, x = { 4, 5 } }
+local t2 = { 1, 2, 3, 4, 5 }
+
+print(table.equal(t1, t2))       --> false
+print(table.equal(t1, t2, true)) --> true
+
+-- operator overloads
+local t1 = table { 1, 2, 3 }
+local t2 = table { 2, 4, 5 }
+
+print(t1 + t2)  -- table.union
+print(t1 - t2)  -- table.negation
+print(t1 * t2)  -- table.intersect
+print(t1 == t2) -- table.equal
+print(t1 .. t2) -- table.merge
 
 ```
