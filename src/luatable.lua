@@ -1081,6 +1081,54 @@ function table:empty()
 -- check if the table has 0 elements, it not consider key pairs.
    return #self == 0
 end
+
+function table:lshift(pos)
+-- left shift the content of the table of 'pos' positions. It returns the 
+-- shifted elements that are below the first index of the table.
+   pos = pos or 0
+   assert_true("lshift", type(pos) == "number" and pos >= 0, "<pos> must be a number >= 0!")
+
+   local s, k = {}, 1
+
+   for i = 1, pos do
+      s[k] = remove(self, 1)
+      k = k + 1
+   end
+
+   return unpack(s) 
+end
+
+function table:rshift(pos)
+-- remove and returns all the elements of the table that are above #self - pos. 
+   pos = pos or 0
+   assert_true("rshift", type(pos) == "number" and pos >= 0, "<pos> must be a number >= 0!")
+
+   local s, k = {}, 0
+   local size = #self
+
+   if size < pos then
+      pos = size
+   end
+
+   for i = 1, pos do
+      s[pos - k] = remove(self, size - i + 1)
+      k = k + 1
+   end
+
+   return unpack(s)
+end
+
+function table:shift(pos)
+-- calls table.lshift if pos is negative or table.rshift is pos is positive
+   pos = pos or 0
+   assert_number("shift", pos)
+
+   if pos >= 0 then
+      return table.rshift(self, pos)
+   end
+
+   return table.lshift(self, pos * -1)
+end
 -----------------------------------------------------------------------------------------
 -- constructors:
 -----------------------------------------------------------------------------------------
