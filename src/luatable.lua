@@ -880,6 +880,58 @@ function table.equal(t1, t2, deep)
 
    return false
 end
+
+function table.all(t, predicate)
+-- returns true if all elements of table t satisfy the given predicate
+   assert_table_func("all", t, predicate)
+
+   for i = 1, #t do
+      if not predicate(t[i]) then
+         return false
+      end
+   end
+
+   return true
+end
+
+function table.allPairs(t, predicate)
+-- returns true if all key-pair elements of table t satisfy the given predicate
+   assert_table_func("allPairs", t, predicate)
+
+   for _, v in pairs(t) do
+      if not predicate(v) then
+         return false
+      end
+   end
+
+   return true
+end
+
+function table.any(t, predicate)
+-- returns true if at least an elements of table t satisfy the given predicate
+   assert_table_func("any", t, predicate)
+
+   for i = 1, #t do
+      if predicate(t[i]) then
+         return true
+      end
+   end
+
+   return false
+end
+
+function table.anyPairs(t, predicate)
+-- returns true if at least a key-pair of table t satisfy the given predicate
+   assert_table_func("anyPairs", t, predicate)
+
+   for _, v in pairs(t) do
+      if predicate(v) then
+         return true
+      end
+   end
+
+   return false
+end
 -----------------------------------------------------------------------------------------
 -- set utility
 -----------------------------------------------------------------------------------------

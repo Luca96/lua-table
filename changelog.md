@@ -12,7 +12,8 @@
 - difference renamed into negation
 - added table.union, table.deepflat, table.equal
 - some operator overloads
-- added lshift, rshift and shift
+- added: lshift, rshift and shift
+- added: all, any, allPairs and anyPairs
 
 ## (0.6) 01/06/2018:
 - new table operator: add
