@@ -115,6 +115,32 @@ describe("utility", function()
          local t = { 1, 2, 3 }
          assert.is_true(rawequal(t, T.shuffle(t)))
       end)
+
+      it("leaves empty and one-element tables unchanged", function()
+         assert.are.same({}, T.shuffle({}))
+         assert.are.same({ 7 }, T.shuffle({ 7 }))
+      end)
+
+      it("makes every ordering equally likely", function()
+         -- regression: the old algorithm gave some orderings 4/27 and others 5/27
+         local runs, counts = 60000, {}
+
+         for _ = 1, runs do
+            local key = table.concat(T.shuffle({ 1, 2, 3 }))
+            counts[key] = (counts[key] or 0) + 1
+         end
+
+         local expected = runs / 6
+         local orderings = 0
+
+         for key, n in pairs(counts) do
+            orderings = orderings + 1
+            assert.is_true(math.abs(n - expected) <= expected * 0.05,
+               ("ordering %s came up %d times, expected about %d"):format(key, n, expected))
+         end
+
+         assert.are.equal(6, orderings)
+      end)
    end)
 
    describe("table.reverse", function()
@@ -262,6 +288,25 @@ describe("utility", function()
       it("compares nested values in their original order", function()
          assert.is_true(T.equal({ { 1 }, 2 }, { 1, 2 }))
          assert.is_false(T.equal({ { 1 }, 2 }, { 2, 1 }))
+      end)
+
+      it("deep equality does not depend on pairs order", function()
+         local t = { 1, 2, alpha = 1, bravo = { 2, 3 }, charlie = "x", delta = 4,
+                     echo = { y = 5 }, foxtrot = 6, golf = true, hotel = 8, india = 9,
+                     juliet = { 10, { 11 } } }
+         assert.is_true(T.equal(t, h.reordered(t), true))
+
+         local words = { alpha = 1, bravo = 2, charlie = 3, delta = 4, echo = 5,
+                         foxtrot = 6, golf = 7, hotel = 8, india = 9, juliet = 10 }
+         assert.is_true(T.equal(words, h.reordered(words), true))
+         assert.is_true(T.equal(h.reordered(words), words, true))
+      end)
+
+      it("deep equality treats equal-content table keys alike", function()
+         local a = { [{ 1 }] = "one", [{ 2 }] = "two", [{ 3, 4 }] = "pair" }
+         local b = { [{ 3, 4 }] = "pair", [{ 2 }] = "two", [{ 1 }] = "one" }
+         assert.is_true(T.equal(a, b, true))
+         assert.is_false(T.equal(a, { [{ 1 }] = "two", [{ 2 }] = "one", [{ 3, 4 }] = "pair" }, true))
       end)
 
       it("terminates on cyclic tables", function()

@@ -122,6 +122,61 @@ describe("functional utils", function()
          t.x = t
          assert.are.same({ 1 }, plain(T.deepflat(t)))
       end)
+
+      it("visits hash keys in sorted order, after the array part", function()
+         assert.are.same({ 3, 1, 2 }, plain(T.deepflat({ 3, b = 2, a = 1 })))
+         -- regression: with 10 keys, pairs order is practically never sorted
+         local t = { c = 3, h = 8, a = 1, j = 10, e = 5, b = 2, g = 7, d = 4, i = 9, f = 6 }
+         assert.are.same({ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, plain(T.deepflat(t)))
+      end)
+
+      it("ranks key types: numbers, strings, booleans, tables, then the rest", function()
+         local f = function() end
+         local t = { [f] = "func", [{}] = "table", [true] = "true", [false] = "false",
+                     s = "string", [2.5] = "number", [-1] = "negative" }
+         assert.are.same({ "negative", "number", "string", "false", "true", "table", "func" },
+            plain(T.deepflat(t)))
+      end)
+
+      it("orders table keys by their content", function()
+         assert.are.same({ "a", "b" }, plain(T.deepflat({ [{ 2 }] = "b", [{ 1 }] = "a" })))
+         -- the first difference decides; a shorter prefix comes first
+         local t = { [{ 1, 2, 9 }] = "c", [{ 1, 2 }] = "a", [{ 1, 2, 3 }] = "b", [{ 0, 99 }] = "z" }
+         assert.are.same({ "z", "a", "b", "c" }, plain(T.deepflat(t)))
+         -- key content is flattened with the same rules (nested, hash keys sorted)
+         t = { [{ y = 2, x = 1 }] = "b", [{ { 1 }, 1 }] = "a" }
+         assert.are.same({ "a", "b" }, plain(T.deepflat(t)))
+      end)
+
+      it("orders keys with the same content by their value", function()
+         local t = { [{ 1 }] = "b", [{ 1 }] = "a", [{ 1 }] = "c" }
+         assert.are.same({ "a", "b", "c" }, plain(T.deepflat(t)))
+      end)
+
+      it("terminates when a key table refers back to the table", function()
+         local t = { 1 }
+         local k = { 2 }
+         k[2] = t
+         k[3] = k
+         t[k] = 3
+         t[{ 0 }] = 4
+         assert.are.same({ 1, 4, 3 }, plain(T.deepflat(t)))
+      end)
+
+      it("terminates when the table is a key of itself (empty content, sorts first)", function()
+         local t = { 1 }
+         t[t] = 2
+         t[{ 0 }] = 3
+         assert.are.same({ 1, 2, 3 }, plain(T.deepflat(t)))
+      end)
+
+      it("handles NaN values under equal-content keys", function()
+         local nan = 0 / 0
+         local r = T.deepflat({ [{ 1 }] = nan, [{ 1 }] = 2, [{ 1 }] = nan })
+         assert.are.equal(3, #r)
+         assert.are.equal(2, r[1])
+         assert.is_true(r[2] ~= r[2] and r[3] ~= r[3])
+      end)
    end)
 
    describe("table.flatmap", function()

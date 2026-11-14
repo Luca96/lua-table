@@ -73,6 +73,59 @@ function helpers.fn(s)
    return function(...) return s(...) end
 end
 
+-- Keys of t in `pairs` order, as one string (to compare iteration orders).
+local function key_order(t)
+   local keys = {}
+
+   for k in next, t do
+      keys[#keys + 1] = tostring(k)
+   end
+
+   return table.concat(keys, ",")
+end
+
+-- A table constructor with n nil fields presizes the hash part without storing anything.
+local function presized(n)
+   local fields = {}
+
+   for i = 1, n do
+      fields[i] = "_" .. i .. " = nil"
+   end
+
+   return assert((loadstring or load)("return {" .. table.concat(fields, ", ") .. "}"))()
+end
+
+-- Shallow copy of t with the same content but a different `pairs` order. A key's slot
+-- depends on the hash-part size (and on insertion order when keys collide), so this
+-- tries growing presized tables, inserting forwards and backwards, until the order
+-- differs. Fails if none does (use several varied keys so that is practically impossible).
+function helpers.reordered(t)
+   local keys = {}
+
+   for k in next, t do
+      keys[#keys + 1] = k
+   end
+
+   local want = key_order(t)
+
+   for size = 1, 10 do
+      for _, backwards in ipairs({ true, false }) do
+         local copy = presized(2 ^ size)
+
+         for i = 1, #keys do
+            local k = keys[backwards and #keys - i + 1 or i]
+            copy[k] = t[k]
+         end
+
+         if key_order(copy) ~= want then
+            return copy
+         end
+      end
+   end
+
+   error("reordered(): could not change the pairs order", 2)
+end
+
 -- Plain, sorted copy of a list; for results that follow the unspecified `pairs` order.
 function helpers.sorted(list)
    local copy = {}

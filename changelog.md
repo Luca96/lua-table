@@ -18,6 +18,14 @@
 - clone now keeps shared references shared in the copy (each occurrence used to get its own copy)
 - argument errors now report the caller's file and line instead of a line inside luatable.lua
 - rockspec: added a busted test section (`luarocks test`) and fixed the source URL (git+https)
+- deepflat visits hash keys in a fixed order (numbers, strings, booleans, tables by content,
+  then other types), so its output and deep equal (`equal(a, b, true)`) no longer depend on
+  `pairs` order
+- added table.of(...): always packs its arguments, so `table.of(t)` is `{ t }` (table.new and
+  `table(t)` still wrap a single table in place)
+- init deep-copies a table init value into each slot instead of sharing one table (behaviour
+  change; copies are enhanced tables)
+- shuffle is now uniform (Fisher-Yates); every ordering used to have a different probability
 
 ## (0.7) 16/07/2018:
 - code rewriting: now the library extends the global table object
