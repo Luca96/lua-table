@@ -1,0 +1,9 @@
+-- busted configuration: run `busted` from the repository root.
+-- Known-bug tests are tagged #knownbug; `busted --exclude-tags=knownbug` skips them.
+return {
+   default = {
+      ROOT    = { "spec" },
+      pattern = "_spec",
+      lpath   = "./src/?.lua;./spec/?.lua;",
+   },
+}

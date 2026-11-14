@@ -9,6 +9,16 @@ View the ```changelog``` for more info about changes.
 ## Installation
 To install the library just ```clone``` the repo or install via [LuaRocks](https://luarocks.org/modules/Luca96/luatable).
 
+## Running tests
+The test suite lives in `spec/` and uses [busted](https://lunarmodules.github.io/busted/):
+```
+luarocks install busted
+busted                           # run everything
+busted --exclude-tags=knownbug   # skip tests for known, still-unfixed bugs
+```
+Tests tagged `#knownbug` describe the intended behaviour of functions that are currently broken,
+so they fail until the corresponding bug is fixed.
+
 ## Examples
 ```lua
 -- load library
