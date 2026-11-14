@@ -1,8 +1,9 @@
+rockspec_format = "3.0"
 package = "LuaTable"
 version = "scm-1"
 
 source = {
-	url = "git://github.com/Luca96/lua-table",
+	url = "git+https://github.com/Luca96/lua-table.git",
 }
 
 description = {
@@ -17,6 +18,14 @@ description = {
 
 dependencies = {
     "lua"
+}
+
+test_dependencies = {
+    "busted",
+}
+
+test = {
+    type = "busted",
 }
 
 build = {

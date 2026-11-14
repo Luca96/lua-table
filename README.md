@@ -15,6 +15,10 @@ The test suite lives in `spec/` and uses [busted](https://lunarmodules.github.io
 luarocks install busted
 busted
 ```
+or, through LuaRocks (installs busted first if it is missing):
+```
+luarocks test
+```
 
 ## Examples
 ```lua
@@ -88,5 +92,4 @@ This section tracks what is still open. Update it when an item is fixed or a new
   global `table` stays untouched, plus an optional `luatable.install()` for the current global
   behaviour. This avoids name clashes with future Lua versions or other libraries.
 - CI running busted on Lua 5.1, 5.4 and LuaJIT.
-- A `test` section in the rockspec, so `luarocks test` runs the suite.
 - Version bump and release once the fixes in the changelog's *Unreleased* section ship.
