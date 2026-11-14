@@ -109,4 +109,20 @@ describe("table.tostring", function()
       assert.matches("v: 1", s, 1, true)
       assert.matches("v: 3", s, 1, true)
    end)
+
+   it("renders a reference back to an ancestor as <cycle>", function()
+      local t = T { 1 }
+      t.me = t
+      local s
+      assert.has_no.errors(function() s = tostring(t) end)
+      assert.matches("k: me, v: <cycle>", s, 1, true)
+      assert.matches("k: 1, v: 1", s, 1, true)
+   end)
+
+   it("renders a shared (non-cyclic) table in full each time", function()
+      local shared = { 7 }
+      local s = T.tostring({ a = shared, b = shared })
+      local _, count = s:gsub("v: 7", "")
+      assert.are.equal(2, count)
+   end)
 end)

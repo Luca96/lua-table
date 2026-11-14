@@ -16,6 +16,24 @@ describe("utility", function()
       it("compacts sparse numeric keys keeping their order", function()
          assert.are.same({ "a", "b", "c" }, plain(T.purify({ [10] = "a", [20] = "b", [30] = "c" })))
       end)
+
+      it("preserves a cycle under a hash key", function()
+         local t = { 1, x = 2 }
+         t.me = t
+         local r = T.purify(t)
+         assert.is_true(rawequal(r.me, r))
+         assert.is_false(rawequal(r, t))
+         assert.are.equal(1, r[1])
+         assert.are.equal(2, r.x)
+      end)
+
+      it("preserves a cycle under a numeric key", function()
+         local t = { 1 }
+         t[2] = t
+         local r = T.purify(t)
+         assert.is_true(rawequal(r[2], r))
+         assert.are.equal(1, r[1])
+      end)
    end)
 
    describe("table.max / table.min", function()
@@ -169,6 +187,22 @@ describe("utility", function()
          assert.is_true(is_enhanced(copy))
          assert.is_true(is_enhanced(copy.x))
       end)
+
+      it("reproduces a cycle in the copy", function()
+         local t = { 1 }
+         t.self = t
+         local c = T.clone(t)
+         assert.is_false(rawequal(c, t))
+         assert.is_true(rawequal(c.self, c))
+         assert.are.equal(1, c[1])
+      end)
+
+      it("keeps shared references shared in the copy", function()
+         local s = {}
+         local c = T.clone({ a = s, b = s })
+         assert.is_true(rawequal(c.a, c.b))
+         assert.is_false(rawequal(c.a, s))
+      end)
    end)
 
    describe("table.merge", function()
@@ -228,6 +262,15 @@ describe("utility", function()
       it("compares nested values in their original order", function()
          assert.is_true(T.equal({ { 1 }, 2 }, { 1, 2 }))
          assert.is_false(T.equal({ { 1 }, 2 }, { 2, 1 }))
+      end)
+
+      it("terminates on cyclic tables", function()
+         local t = { 1, 2 }
+         t[3] = t
+         t.x = t
+         assert.is_true(T.equal(t, t))
+         assert.is_true(T.equal(t, t, true))
+         assert.is_true(T.equal(t, { 1, 2 }))
       end)
    end)
 end)

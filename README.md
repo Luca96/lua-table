@@ -73,8 +73,6 @@ This section tracks what is still open. Update it when an item is fixed or a new
 - **Dot-access returns library functions.** Enhanced tables use `__index = table`, so `tb.sum` or
   `tb.map` on a table without those keys returns the library function instead of `nil`.
   `get` and `haskey` are not affected; plain indexing is.
-- **Cyclic tables.** `flat`, `deepflat`, `clone` and `purify` recurse forever on a table that
-  contains itself.
 - **Deep equality depends on `pairs` order.** `equal(a, b, true)` compares hash-part values in
   `pairs` order, so two tables with the same content can compare unequal.
 - **`table.new(t)` wraps in place.** A single table argument is turned into the enhanced table

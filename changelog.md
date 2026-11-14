@@ -13,6 +13,9 @@
 - tostring no longer crashes on tables containing userdata
 - lshift and rshift now reject a negative pos
 - removed the unused assert_init helper
+- cyclic tables no longer cause infinite recursion: flat and deepflat skip references back to an
+  ancestor, tostring renders them as `<cycle>`, clone and purify reproduce the cycle in the copy
+- clone now keeps shared references shared in the copy (each occurrence used to get its own copy)
 
 ## (0.7) 16/07/2018:
 - code rewriting: now the library extends the global table object

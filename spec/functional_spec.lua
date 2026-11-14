@@ -88,6 +88,23 @@ describe("functional utils", function()
       it("keeps the original element order with nesting in the middle", function()
          assert.are.same({ 1, 2, 3, 4 }, plain(T.flat({ 1, { 2, { 3 } }, 4 })))
       end)
+
+      it("skips a reference back to the table itself", function()
+         local t = { 1, 2 }
+         t[3] = t
+         assert.are.same({ 1, 2 }, plain(T.flat(t)))
+      end)
+
+      it("skips a reference back to an ancestor deeper down", function()
+         local t = { 1 }
+         t[2] = { 2, t }
+         assert.are.same({ 1, 2 }, plain(T.flat(t)))
+      end)
+
+      it("still flattens a shared (non-cyclic) table every time it appears", function()
+         local s = { 1 }
+         assert.are.same({ 1, 1 }, plain(T.flat({ s, s })))
+      end)
    end)
 
    describe("table.deepflat", function()
@@ -98,6 +115,12 @@ describe("functional utils", function()
 
       it("returns an enhanced table", function()
          assert.is_true(is_enhanced(T.deepflat({ 1 })))
+      end)
+
+      it("skips a reference back to the table under a hash key", function()
+         local t = { 1 }
+         t.x = t
+         assert.are.same({ 1 }, plain(T.deepflat(t)))
       end)
    end)
 

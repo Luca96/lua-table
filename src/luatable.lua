@@ -88,9 +88,10 @@ end
 -----------------------------------------------------------------------------------------
 local table = table
 
-function table.tostring(t, tab)
--- returns a string representation of the given table
-   tab = tab or "  "
+local function tostring_rec(t, tab, path)
+-- path holds the tables currently being rendered (t and its ancestors):
+-- a value found in path is a cycle and is rendered as <cycle>
+   path[t] = true
 
    local b = { "table [" }
    local i = 2
@@ -99,7 +100,8 @@ function table.tostring(t, tab)
       -- userdata values are skipped; only advance i when a line is written,
       -- so the buffer never has holes (concat would fail on them)
       if type(v) == "table" then
-         b[i] = format(tab .. "k: %s, v: %s", k, table.tostring(v, tab .. "  "))
+         local s = path[v] and "<cycle>" or tostring_rec(v, tab .. "  ", path)
+         b[i] = format(tab .. "k: %s, v: %s", k, s)
          i = i + 1
 
       elseif type(v) ~= "userdata" then
@@ -109,8 +111,14 @@ function table.tostring(t, tab)
    end
 
    b[i] = (tab .. "]"):sub(3)
+   path[t] = nil
 
    return concat(b, "\n")
+end
+
+function table.tostring(t, tab)
+-- returns a string representation of the given table
+   return tostring_rec(t, tab or "  ", {})
 end
 
 function table.info()
@@ -475,15 +483,20 @@ function table.reject(t, criteria, ...)
    return tb
 end
 
-local function flat_into(result, items, deep)
+local function flat_into(result, items, deep, path)
 -- depth-first: appends the non-table values of items to result, in order.
 -- The array part (1..#items) comes first; if deep is true, the remaining
 -- key-value pairs follow (in pairs order).
+-- path holds items and its ancestors: a nested table already in path is a
+-- cycle and is skipped. Shared (non-cyclic) tables are flattened each time.
    local n = #items
+   path[items] = true
 
    local function add(v)
       if type(v) == "table" then
-         flat_into(result, v, deep)
+         if not path[v] then
+            flat_into(result, v, deep, path)
+         end
       else
          result[#result + 1] = v
       end
@@ -503,6 +516,8 @@ local function flat_into(result, items, deep)
       end
    end
 
+   path[items] = nil
+
    return result
 end
 
@@ -510,14 +525,14 @@ function table.flat(t)
 -- flattens a nested table (over int indices - use table.deepflat instead)
    assert_table("flat", t)
 
-   return flat_into(table(), t, false)
+   return flat_into(table(), t, false, {})
 end
 
 function table.deepflat(t)
 -- flattens a nested table over all key-value pairs
    assert_table("deepflat", t)
 
-   return flat_into(table(), t, true)
+   return flat_into(table(), t, true, {})
 end
 
 function table.flatmap(t, func, ...)
@@ -542,19 +557,23 @@ end
 -----------------------------------------------------------------------------------------
 -- utility
 -----------------------------------------------------------------------------------------
-function table.purify(t)
--- recursively removes all nil values along all key-value pairs 
-   assert_table("purify", t)
+local function purify_rec(t, seen)
+-- seen maps each input table to its purified copy; registering the copy
+-- before recursing makes cycles (and shared references) map to the same copy
+   if seen[t] then
+      return seen[t]
+   end
 
    local tb   = table()
    local nums = {}
+   seen[t] = tb
 
    for k, v in pairs(t) do
       if type(k) == "number" then
          nums[#nums + 1] = k
       else
          if type(v) == "table" then
-            v = table.purify(v)
+            v = purify_rec(v, seen)
          end
 
          tb[k] = v
@@ -569,13 +588,20 @@ function table.purify(t)
       local v = t[nums[i]]
 
       if type(v) == "table" then
-         v = table.purify(v)
+         v = purify_rec(v, seen)
       end
 
       tb[i] = v
    end
 
    return tb
+end
+
+function table.purify(t)
+-- recursively removes all nil values along all key-value pairs
+   assert_table("purify", t)
+
+   return purify_rec(t, {})
 end
 
 function table.max(t, comparator)
@@ -763,21 +789,32 @@ function table.find(t, value)
    return nil
 end
 
-function table.clone(t)
--- clone recursively each key-value pair of the input table
-   assert_table("clone", t)
-    
+local function clone_rec(t, seen)
+-- seen maps each original table to its copy; registering the copy before
+-- recursing reproduces cycles and keeps shared references shared
+   if seen[t] then
+      return seen[t]
+   end
+
    local copy = table()
+   seen[t] = copy
 
    for k, v in pairs(t) do
       if type(v) == "table" then
-         v = table.clone(v)
+         v = clone_rec(v, seen)
       end
-      
+
       copy[k] = v
    end
 
    return copy
+end
+
+function table.clone(t)
+-- clone recursively each key-value pair of the input table
+   assert_table("clone", t)
+
+   return clone_rec(t, {})
 end
 
 function table.merge(t1, t2)
