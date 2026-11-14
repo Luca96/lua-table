@@ -85,7 +85,7 @@ describe("functional utils", function()
          assert.are.same({ 1, 2, 3 }, plain(r))
       end)
 
-      it("keeps the original element order with nesting in the middle #knownbug", function()
+      it("keeps the original element order with nesting in the middle", function()
          assert.are.same({ 1, 2, 3, 4 }, plain(T.flat({ 1, { 2, { 3 } }, 4 })))
       end)
    end)

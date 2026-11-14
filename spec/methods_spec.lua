@@ -21,7 +21,7 @@ describe("table methods", function()
          assert.is_nil(t:at(10))
       end)
 
-      it("returns a stored false instead of the default #knownbug", function()
+      it("returns a stored false instead of the default", function()
          assert.are.equal(false, T { false }:at(1, "d"))
       end)
    end)
@@ -38,11 +38,11 @@ describe("table methods", function()
          assert.are.equal("d", t:get("missing", "d"))
       end)
 
-      it("returns a stored false instead of the default #knownbug", function()
+      it("returns a stored false instead of the default", function()
          assert.are.equal(false, T { false }:get(1, "d"))
       end)
 
-      it("does not see library functions as stored values #knownbug", function()
+      it("does not see library functions as stored values", function()
          assert.are.equal(0, T {}:get("sum", 0))
       end)
    end)
@@ -125,7 +125,7 @@ describe("table methods", function()
          assert.is_false(t:haskey("missing"))
       end)
 
-      it("haskey does not report library function names #knownbug", function()
+      it("haskey does not report library function names", function()
          assert.is_false(T {}:haskey("map"))
       end)
 
@@ -137,31 +137,31 @@ describe("table methods", function()
    end)
 
    describe(":lshift / :rshift / :shift", function()
-      it("lshift removes and returns the first pos values #knownbug", function()
+      it("lshift removes and returns the first pos values", function()
          local t = T { 1, 2, 3, 4 }
          assert.are.same({ 1, 2 }, { t:lshift(2) })
          assert.are.same({ 3, 4 }, plain(t))
       end)
 
-      it("rshift removes and returns the last pos values in order #knownbug", function()
+      it("rshift removes and returns the last pos values in order", function()
          local t = T { 1, 2, 3, 4 }
          assert.are.same({ 3, 4 }, { t:rshift(2) })
          assert.are.same({ 1, 2 }, plain(t))
       end)
 
-      it("rshift clamps pos to the table size #knownbug", function()
+      it("rshift clamps pos to the table size", function()
          local t = T { 1, 2 }
          assert.are.same({ 1, 2 }, { t:rshift(10) })
          assert.are.same({}, plain(t))
       end)
 
-      it("shift with no argument removes nothing #knownbug", function()
+      it("shift with no argument removes nothing", function()
          local t = T { 1, 2 }
          assert.are.equal(0, select("#", t:shift()))
          assert.are.same({ 1, 2 }, plain(t))
       end)
 
-      it("shift(n) right-shifts and shift(-n) left-shifts #knownbug", function()
+      it("shift(n) right-shifts and shift(-n) left-shifts", function()
          local t = T { 1, 2, 3, 4 }
          assert.are.same({ 4 }, { t:shift(1) })
          assert.are.same({ 1 }, { t:shift(-1) })

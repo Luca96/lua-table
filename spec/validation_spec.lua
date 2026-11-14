@@ -85,7 +85,7 @@ describe("argument validation", function()
          assert.error_matches(function() T.ofChars(123) end, "table%.ofChars%(%)")
       end)
 
-      it("lshift / rshift with a negative pos #knownbug", function()
+      it("lshift / rshift with a negative pos", function()
          assert.error_matches(function() T { 1 }:lshift(-1) end, "table%.lshift%(%)")
          assert.error_matches(function() T { 1 }:rshift(-1) end, "table%.rshift%(%)")
       end)

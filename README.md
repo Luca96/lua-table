@@ -13,11 +13,8 @@ To install the library just ```clone``` the repo or install via [LuaRocks](https
 The test suite lives in `spec/` and uses [busted](https://lunarmodules.github.io/busted/):
 ```
 luarocks install busted
-busted                           # run everything
-busted --exclude-tags=knownbug   # skip tests for known, still-unfixed bugs
+busted
 ```
-Tests tagged `#knownbug` describe the intended behaviour of functions that are currently broken,
-so they fail until the corresponding bug is fixed.
 
 ## Examples
 ```lua
@@ -68,3 +65,30 @@ print(t1 == t2) -- table.equal
 print(t1 .. t2) -- table.merge
 
 ```
+
+## Known issues & roadmap
+This section tracks what is still open. Update it when an item is fixed or a new one is found.
+
+### Known issues
+- **Dot-access returns library functions.** Enhanced tables use `__index = table`, so `tb.sum` or
+  `tb.map` on a table without those keys returns the library function instead of `nil`.
+  `get` and `haskey` are not affected; plain indexing is.
+- **Cyclic tables.** `flat`, `deepflat`, `clone` and `purify` recurse forever on a table that
+  contains itself.
+- **Deep equality depends on `pairs` order.** `equal(a, b, true)` compares hash-part values in
+  `pairs` order, so two tables with the same content can compare unequal.
+- **`table.new(t)` wraps in place.** A single table argument is turned into the enhanced table
+  itself (no copy), so `table.new({x})` can't create a one-element table that holds `{x}`.
+- **`init(n, {})` shares one table.** A table init value is stored by reference in every slot.
+- **`shuffle` is biased.** It swaps each slot with a random slot from the whole table, so some
+  orderings are more likely than others; it should use Fisher-Yates.
+
+### Roadmap
+- **Module instead of global extension.** Today the library adds its functions to Lua's global
+  `table` (by design). Alternative: `require "luatable"` returns its own table with
+  `__index = table` as a fallback, so `local table = require "luatable"` works as now while the
+  global `table` stays untouched, plus an optional `luatable.install()` for the current global
+  behaviour. This avoids name clashes with future Lua versions or other libraries.
+- CI running busted on Lua 5.1, 5.4 and LuaJIT.
+- A `test` section in the rockspec, so `luarocks test` runs the suite.
+- Version bump and release once the fixes in the changelog's *Unreleased* section ship.

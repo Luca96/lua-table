@@ -27,7 +27,7 @@ SOFTWARE.
 -----------------------------------------------------------------------------------------
 local setmetatable = setmetatable 
 local assert = assert 
-local unpack = unpack 
+local unpack = table.unpack or unpack
 local select = select 
 local error  = error 
 local print  = print 
@@ -48,12 +48,6 @@ local len    = string.len
 local warn = "\27[1;33mWarning at\27[0m"
 local term = "\27[1;36m>>>\27[0m"
 local err  = "\27[1;31mError at\27[0m"
-
-local function assert_init(t)
-    assert(type(t) == "table", 
-        format("%s table.init(): optional parameter <table> must be a not-nil table!", 
-            err, msg))
-end
 
 local function assert_table(msg, t)
     assert(type(t) == "table", 
@@ -102,17 +96,16 @@ function table.tostring(t, tab)
    local i = 2
 
    for k, v in pairs(t) do
-      if v == nil then
-         v = ''
-         
-      elseif type(v) == "table" then
+      -- userdata values are skipped; only advance i when a line is written,
+      -- so the buffer never has holes (concat would fail on them)
+      if type(v) == "table" then
          b[i] = format(tab .. "k: %s, v: %s", k, table.tostring(v, tab .. "  "))
+         i = i + 1
 
       elseif type(v) ~= "userdata" then
          b[i] = format(tab .. "k: %s, v: %s", k, v)
+         i = i + 1
       end
-
-      i = i + 1
    end
 
    b[i] = (tab .. "]"):sub(3)
@@ -264,13 +257,27 @@ function table.range(t, start, count, step)
 -- build a range iterator
    assert_table ("range", t)
    
-   step  = step  or 1
-   count = count or #t
    start = start or 1
-
+   step  = step  or 1
    assert_number("range", start)
-   assert_number("range", count)
    assert_number("range", step)
+
+   if count == nil then
+      -- default: as many steps as stay inside 1..#t
+      local n = #t
+
+      if step > 0 then
+         count = floor((n - start) / step) + 1
+      elseif step < 0 then
+         count = floor((start - 1) / -step) + 1
+      else
+         count = n
+      end
+
+      if count < 0 then count = 0 end
+   end
+
+   assert_number("range", count)
 
    local i = start
    local c = count
@@ -318,6 +325,11 @@ function table.slide(t, k)
    local i = 0
 
    return function()
+      -- only full windows: stop once fewer than k values remain
+      if i + k > #t then
+         return nil
+      end
+
       local values = {}
 
       for j = 1, k do
@@ -326,7 +338,7 @@ function table.slide(t, k)
 
       i = i + 1
 
-      return unpack(values)
+      return unpack(values, 1, k)
    end
 end
 
@@ -463,29 +475,30 @@ function table.reject(t, criteria, ...)
    return tb
 end
 
-function table.flat(t)
--- flattens a nested table (over int indices - use table.deepflat instead)
-   assert_table("flat", t)
+local function flat_into(result, items, deep)
+-- depth-first: appends the non-table values of items to result, in order.
+-- The array part (1..#items) comes first; if deep is true, the remaining
+-- key-value pairs follow (in pairs order).
+   local n = #items
 
-   local queque = { t }
-   local result = table()
-   local base = 1
-   local top  = 1
-   local k = 1
+   local function add(v)
+      if type(v) == "table" then
+         flat_into(result, v, deep)
+      else
+         result[#result + 1] = v
+      end
+   end
 
-   while base <= top do
-      local items = queque[base]
-      base = base + 1
+   for i = 1, n do
+      add(items[i])
+   end
 
-      for i = 1, #items do
-         local v = items[i]
+   if deep then
+      for k, v in pairs(items) do
+         local in_array = type(k) == "number" and k >= 1 and k <= n and floor(k) == k
 
-         if type(v) == "table" then
-            top = top + 1
-            queque[top] = v
-         else
-            result[k] = v
-            k = k + 1
+         if not in_array then
+            add(v)
          end
       end
    end
@@ -493,32 +506,18 @@ function table.flat(t)
    return result
 end
 
+function table.flat(t)
+-- flattens a nested table (over int indices - use table.deepflat instead)
+   assert_table("flat", t)
+
+   return flat_into(table(), t, false)
+end
+
 function table.deepflat(t)
 -- flattens a nested table over all key-value pairs
    assert_table("deepflat", t)
 
-   local queque = { t }
-   local result = table()
-   local base = 1
-   local top  = 1
-   local k = 1
-
-   while base <= top do
-      local items = queque[base]
-      base = base + 1
-
-      for _, v in pairs(items) do
-         if type(v) == "table" then
-            top = top + 1
-            queque[top] = v
-         else
-            result[k] = v
-            k = k + 1
-         end
-      end
-   end
-
-   return result
+   return flat_into(table(), t, true)
 end
 
 function table.flatmap(t, func, ...)
@@ -547,20 +546,33 @@ function table.purify(t)
 -- recursively removes all nil values along all key-value pairs 
    assert_table("purify", t)
 
-   local tb = table()
-   local i  = 1
+   local tb   = table()
+   local nums = {}
 
    for k, v in pairs(t) do
+      if type(k) == "number" then
+         nums[#nums + 1] = k
+      else
+         if type(v) == "table" then
+            v = table.purify(v)
+         end
+
+         tb[k] = v
+      end
+   end
+
+   -- numeric keys are compacted to 1..n in ascending key order
+   -- (pairs order is unspecified, so it can't be used directly)
+   table.sort(nums)
+
+   for i = 1, #nums do
+      local v = t[nums[i]]
+
       if type(v) == "table" then
          v = table.purify(v)
       end
 
-      if type(k) == "number" then
-         tb[i] = v
-         i = i + 1
-      else
-         tb[k] = v
-      end
+      tb[i] = v
    end
 
    return tb
@@ -568,7 +580,7 @@ end
 
 function table.max(t, comparator)
 -- return the biggest value inside the table in base of a comparator function
-   comparator = comparator or Table.ge
+   comparator = comparator or table.gt
    assert_table_func("max", t, comparator)
 
    local max = t[1]
@@ -586,20 +598,20 @@ end
 
 function table.min(t, comparator)
 -- return the smallest value inside the table in base of a comparator function
-   comparator = comparator or Table.ge
+   comparator = comparator or table.lt
    assert_table_func("min", t, comparator)
 
-   local max = t[1]
+   local min = t[1]
 
    for i = 2, #t do
       local item = t[i]
 
-      if comparator(item, max) then
-         max = item
+      if comparator(item, min) then
+         min = item
       end
    end
 
-   return max
+   return min
 end
 
 function table.avg(t)
@@ -1044,19 +1056,32 @@ function table:at(index, default)
 -- table[index] is nil.
    assert_number("at", index)
 
-   -- positive index
-   if index >= 0 then
-      return self[index] or default
+   -- negative index counts from the end
+   if index < 0 then
+      index = #self + index + 1
    end
 
-   -- negative index
-   return self[#self + index + 1] or default
+   -- explicit nil check: a stored false must not be replaced by the default
+   local v = self[index]
+
+   if v == nil then
+      return default
+   end
+
+   return v
 end
 
 function table:get(key, default)
--- returns the element at the given key, if element is nil it returns an 
--- optional default value
-   return self[key] or default
+-- returns the element at the given key, if element is nil it returns an
+-- optional default value.
+-- rawget: library functions reachable through __index are not stored values
+   local v = rawget(self, key)
+
+   if v == nil then
+      return default
+   end
+
+   return v
 end
 
 function table:append(...)
@@ -1125,8 +1150,8 @@ function table:has(value)
 end
 
 function table:haskey(key)
--- returns true if self[key] is not nil
-   return self[key] ~= nil
+-- returns true if self[key] is not nil (library functions don't count)
+   return rawget(self, key) ~= nil
 end
 
 function table:empty()
@@ -1138,7 +1163,7 @@ function table:lshift(pos)
 -- left shift the content of the table of 'pos' positions. It returns the 
 -- shifted elements that are below the first index of the table.
    pos = pos or 0
-   assert_true("lshift", type(pos) == "number" and pos >= 0, "<pos> must be a number >= 0!")
+   assert_true("lshift", "<pos> must be a number >= 0!", type(pos) == "number" and pos >= 0)
 
    local s, k = {}, 1
 
@@ -1153,7 +1178,7 @@ end
 function table:rshift(pos)
 -- remove and returns all the elements of the table that are above #self - pos. 
    pos = pos or 0
-   assert_true("rshift", type(pos) == "number" and pos >= 0, "<pos> must be a number >= 0!")
+   assert_true("rshift", "<pos> must be a number >= 0!", type(pos) == "number" and pos >= 0)
 
    local s, k = {}, 0
    local size = #self

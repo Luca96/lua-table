@@ -103,7 +103,7 @@ describe("table.tostring", function()
       assert.matches("^table %[", T.tostring({}))
    end)
 
-   it("skips userdata values but keeps the other entries #knownbug", function()
+   it("skips userdata values but keeps the other entries", function()
       local s
       assert.has_no.errors(function() s = T.tostring({ 1, io.stdout, 3 }) end)
       assert.matches("v: 1", s, 1, true)
