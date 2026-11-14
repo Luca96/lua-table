@@ -26,7 +26,6 @@ SOFTWARE.
 --]]
 -----------------------------------------------------------------------------------------
 local setmetatable = setmetatable 
-local assert = assert 
 local unpack = table.unpack or unpack
 local select = select 
 local error  = error 
@@ -49,27 +48,36 @@ local warn = "\27[1;33mWarning at\27[0m"
 local term = "\27[1;36m>>>\27[0m"
 local err  = "\27[1;31mError at\27[0m"
 
+-- The checks raise errors at level 3 (1 = the check, 2 = the library function,
+-- 3 = the code that called it), so the reported position is the caller's line,
+-- not a line inside this file. Messages are only formatted when a check fails.
 local function assert_table(msg, t)
-    assert(type(t) == "table", 
-        format("%s table.%s(): parameter <table> must be a not-nil table!", 
-            err, msg))
+    if type(t) ~= "table" then
+        error(format("%s table.%s(): parameter <table> must be a not-nil table!",
+            err, msg), 3)
+    end
 end
 
 local function assert_table_func(msg, t, f)
-    assert(type(t) == "table", 
-        format("%s table.%s(): require a not-nil table!", err, msg))
+    if type(t) ~= "table" then
+        error(format("%s table.%s(): require a not-nil table!", err, msg), 3)
+    end
 
-    assert(type(f) == "function", 
-        format("%s table.%s(): require a not-nil function!", err, msg))
+    if type(f) ~= "function" then
+        error(format("%s table.%s(): require a not-nil function!", err, msg), 3)
+    end
 end
 
 local function assert_number(fn, num)
-    assert(type(num) == "number", 
-        format("%s table.%s(): require a number!", err, fn))
+    if type(num) ~= "number" then
+        error(format("%s table.%s(): require a number!", err, fn), 3)
+    end
 end
 
 local function assert_true(f, msg, test)
-    assert(test, format("%s table.%s(): %s", err, f, msg))
+    if not test then
+        error(format("%s table.%s(): %s", err, f, msg), 3)
+    end
 end
 
 local function warn_nil(fn, value)

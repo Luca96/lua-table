@@ -16,6 +16,7 @@
 - cyclic tables no longer cause infinite recursion: flat and deepflat skip references back to an
   ancestor, tostring renders them as `<cycle>`, clone and purify reproduce the cycle in the copy
 - clone now keeps shared references shared in the copy (each occurrence used to get its own copy)
+- argument errors now report the caller's file and line instead of a line inside luatable.lua
 
 ## (0.7) 16/07/2018:
 - code rewriting: now the library extends the global table object

@@ -91,6 +91,43 @@ describe("argument validation", function()
       end)
    end)
 
+   describe("error position", function()
+      -- Runs fn (which records the line it calls the library from) and returns that
+      -- line and the error message. The message must point at that line in this file,
+      -- not at a line inside luatable.lua.
+      local function caught(fn)
+         local line
+         local ok, err = pcall(fn, function() line = debug.getinfo(2, "l").currentline end)
+         assert.is_false(ok)
+         return line, err
+      end
+
+      local function assert_points_at_caller(line, err)
+         assert.matches("validation_spec%.lua:" .. line .. ":", err)
+         assert.is_nil(err:find("luatable.lua", 1, true))
+      end
+
+      it("points at the caller for a missing table", function()
+         assert_points_at_caller(caught(function(here) here(); T.map(nil, print) end))
+      end)
+
+      it("points at the caller for a missing function", function()
+         assert_points_at_caller(caught(function(here) here(); T.map({}, nil) end))
+      end)
+
+      it("points at the caller for a non-number", function()
+         assert_points_at_caller(caught(function(here) here(); T.zeros("3") end))
+      end)
+
+      it("points at the caller for an invalid value", function()
+         assert_points_at_caller(caught(function(here) here(); T.group({}, 0) end))
+      end)
+
+      it("points at the caller for a method call", function()
+         assert_points_at_caller(caught(function(here) here(); T { 1 }:lshift(-1) end))
+      end)
+   end)
+
    describe("warnings", function()
       -- The library captures `print` when it is loaded, so the stub has to be in
       -- place before the module is (re)loaded.
