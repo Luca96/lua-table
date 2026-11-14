@@ -1,5 +1,23 @@
 # Lua-Table Changelog
 
+## Unreleased
+- added a busted unit test suite (`spec/`)
+- fixed group, slide, lshift, rshift and shift on Lua 5.2+ (`unpack` is now `table.unpack`)
+- slide now yields only full windows
+- fixed max/min without a comparator (they crashed); min now returns the smallest value
+- get and haskey no longer report library functions as stored values
+- at and get return a stored `false` instead of the default
+- range(t, start) no longer runs past the end of the table
+- flat and deepflat are now depth-first and keep the original element order (also fixes equal)
+- purify keeps numeric keys in ascending order when compacting them
+- tostring no longer crashes on tables containing userdata
+- lshift and rshift now reject a negative pos
+- removed the unused assert_init helper
+- cyclic tables no longer cause infinite recursion: flat and deepflat skip references back to an
+  ancestor, tostring renders them as `<cycle>`, clone and purify reproduce the cycle in the copy
+- clone now keeps shared references shared in the copy (each occurrence used to get its own copy)
+- argument errors now report the caller's file and line instead of a line inside luatable.lua
+
 ## (0.7) 16/07/2018:
 - code rewriting: now the library extends the global table object
 - removed step iterator (use range instead)
