@@ -84,20 +84,32 @@ local function key_order(t)
    return table.concat(keys, ",")
 end
 
--- A table constructor with n nil fields presizes the hash part without storing anything.
-local function presized(n)
-   local fields = {}
+-- Copy of t (keys in the given order) inside a hash part grown by n placeholder keys.
+-- The placeholders are removed afterwards: deleting keys never shrinks a table, so the
+-- copy keeps the bigger hash part. (A constructor with nil fields would presize on
+-- PUC Lua but not on LuaJIT.)
+local function copy_presized(t, keys, n)
+   local copy, placeholders = {}, {}
 
    for i = 1, n do
-      fields[i] = "_" .. i .. " = nil"
+      placeholders[i] = {}
+      copy[placeholders[i]] = true
    end
 
-   return assert((loadstring or load)("return {" .. table.concat(fields, ", ") .. "}"))()
+   for i = 1, #keys do
+      copy[keys[i]] = t[keys[i]]
+   end
+
+   for i = 1, n do
+      copy[placeholders[i]] = nil
+   end
+
+   return copy
 end
 
 -- Shallow copy of t with the same content but a different `pairs` order. A key's slot
 -- depends on the hash-part size (and on insertion order when keys collide), so this
--- tries growing presized tables, inserting forwards and backwards, until the order
+-- tries growing hash parts, inserting forwards and backwards, until the order
 -- differs. Fails if none does (use several varied keys so that is practically impossible).
 function helpers.reordered(t)
    local keys = {}
@@ -108,14 +120,15 @@ function helpers.reordered(t)
 
    local want = key_order(t)
 
-   for size = 1, 10 do
-      for _, backwards in ipairs({ true, false }) do
-         local copy = presized(2 ^ size)
+   local backwards_keys = {}
 
-         for i = 1, #keys do
-            local k = keys[backwards and #keys - i + 1 or i]
-            copy[k] = t[k]
-         end
+   for i = 1, #keys do
+      backwards_keys[i] = keys[#keys - i + 1]
+   end
+
+   for size = 0, 10 do
+      for _, order in ipairs({ backwards_keys, keys }) do
+         local copy = copy_presized(t, order, 2 ^ size)
 
          if key_order(copy) ~= want then
             return copy

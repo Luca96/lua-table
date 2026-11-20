@@ -103,8 +103,8 @@ local function sorted(list)
 end
 
 -- same content as t, but a different pairs order: a key's slot depends on the size of
--- the hash part, so copy t into presized tables (a constructor with n nil fields
--- reserves n slots without storing anything) until the iteration order changes
+-- the hash part, so copy t into tables grown by n placeholder keys (removed afterwards:
+-- deleting keys never shrinks a table) until the iteration order changes
 local function reordered(t)
    local function order(x)
       local keys = {}
@@ -112,12 +112,11 @@ local function reordered(t)
       return table.concat(keys, ",")
    end
 
-   for size = 1, 10 do
-      local fields = {}
-      for i = 1, 2 ^ size do fields[i] = "_" .. i .. " = nil" end
-      local copy = assert((loadstring or load)("return {" .. table.concat(fields, ", ") .. "}"))()
-
+   for size = 0, 10 do
+      local copy, placeholders = {}, {}
+      for i = 1, 2 ^ size do placeholders[i] = {}; copy[placeholders[i]] = true end
       for k, v in next, t do copy[k] = v end
+      for i = 1, #placeholders do copy[placeholders[i]] = nil end
       if order(copy) ~= order(t) then return copy end
    end
 
@@ -132,6 +131,15 @@ end
 section("library info")
 -----------------------------------------------------------------------------------------
 table.info()
+do   -- info() prints through a cached print, so read its version from the source
+   local f = assert(io.open(here .. "../src/luatable.lua", "rb"))
+   local version = f:read("*a"):match("function table%.info%(%).-version: ([%d.]+)")
+   f:close()
+   check("info() reports version 0.8.0", version, "0.8.0")
+   local spec = io.open(here .. "../rockspecs/luatable-" .. tostring(version) .. "-1.rockspec", "rb")
+   check("  ...with a matching release rockspec", spec ~= nil, true)
+   if spec then spec:close() end
+end
 
 -----------------------------------------------------------------------------------------
 section("constructors")
