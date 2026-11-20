@@ -25,8 +25,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 --]]
 -----------------------------------------------------------------------------------------
-local setmetatable = setmetatable 
+local setmetatable = setmetatable
 local unpack = table.unpack or unpack
+local sort   = table.sort
+local tostring = tostring
+local rawequal = rawequal
+local yield  = coroutine.yield
+local wrap   = coroutine.wrap
 local select = select 
 local error  = error 
 local print  = print 
@@ -133,7 +138,7 @@ function table.info()
 -- print library info
    print [[
    luatable [
-      version: 0.7,
+      version: 0.8.0,
       author: Luca Anzalone,
       github: https://github.com/Luca96/lua-table
    ]
@@ -491,10 +496,124 @@ function table.reject(t, criteria, ...)
    return tb
 end
 
-local function flat_into(result, items, deep, path)
--- depth-first: appends the non-table values of items to result, in order.
+-- flat_into, seq_at and compare call each other, so they are declared up front
+local flat_into, seq_at, compare
+
+-- rank of each key type in the deepflat order; any other type ranks last
+local rank = { number = 1, string = 2, boolean = 3, table = 4 }
+
+seq_at = function(t, i, ctx)
+-- returns the i-th value of t's canonical sequence (its deepflat), or nil past
+-- the end. The sequence is produced lazily by a coroutine and remembered in
+-- ctx.seqs, so a comparison only flattens as far as the first difference.
+-- ctx.path holds the ancestors of the table being sorted: like in flat_into,
+-- they are cycles, so an ancestor has an empty sequence.
+   if ctx.path[t] then
+      return nil
+   end
+
+   local s = ctx.seqs[t]
+
+   if s == nil then
+      local path = {}
+
+      for k in pairs(ctx.path) do
+         path[k] = true
+      end
+
+      local function emit(v)
+         if v ~= nil then
+            yield(v)
+         end
+      end
+
+      s = { n = 0, gen = wrap(function() flat_into(emit, t, true, path) end) }
+      ctx.seqs[t] = s
+   end
+
+   while s.n < i and s.gen do
+      local v = s.gen()
+
+      if v == nil then
+         s.gen = nil
+      else
+         s.n = s.n + 1
+         s[s.n] = v
+      end
+   end
+
+   return s[i]
+end
+
+compare = function(a, b, ctx)
+-- total order used by deepflat for hash keys: returns -1, 0 or 1.
+-- numbers < strings < booleans < tables < other types; tables compare by
+-- content (their deepflat, element by element, stopping at the first
+-- difference); functions, userdata and threads can only compare by identity.
+   if rawequal(a, b) then
+      return 0
+   end
+
+   local ta, tb = type(a), type(b)
+   local ra, rb = rank[ta] or 5, rank[tb] or 5
+
+   if ra ~= rb then
+      return ra < rb and -1 or 1
+   end
+
+   if ta == "number" then
+      -- NaN is not ordered by <, so it goes after every other number
+      local na, nb = a ~= a, b ~= b
+
+      if na or nb then
+         if na and nb then return 0 end
+         return na and 1 or -1
+      end
+
+      return a < b and -1 or (b < a and 1 or 0)
+
+   elseif ta == "string" then
+      return a < b and -1 or (b < a and 1 or 0)
+
+   elseif ta == "boolean" then
+      return a and 1 or -1   -- a ~= b here, so false comes first
+
+   elseif ta == "table" then
+      local i = 1
+
+      while true do
+         local x, y = seq_at(a, i, ctx), seq_at(b, i, ctx)
+
+         if x == nil or y == nil then
+            -- a sequence that ends first (a prefix of the other) comes first
+            if x == nil and y == nil then return 0 end
+            return x == nil and -1 or 1
+         end
+
+         local c = compare(x, y, ctx)
+
+         if c ~= 0 then
+            return c
+         end
+
+         i = i + 1
+      end
+   end
+
+   if ta ~= tb then
+      return ta < tb and -1 or 1
+   end
+
+   local sa, sb = tostring(a), tostring(b)
+
+   return sa < sb and -1 or (sb < sa and 1 or 0)
+end
+
+flat_into = function(emit, items, deep, path)
+-- depth-first: passes the non-table values of items to emit, in order.
 -- The array part (1..#items) comes first; if deep is true, the remaining
--- key-value pairs follow (in pairs order).
+-- key-value pairs follow, sorted by key (see compare) and, for keys that
+-- compare equal, by value, so the result never depends on pairs order.
 -- path holds items and its ancestors: a nested table already in path is a
 -- cycle and is skipped. Shared (non-cyclic) tables are flattened each time.
    local n = #items
@@ -503,10 +622,10 @@ local function flat_into(result, items, deep, path)
    local function add(v)
       if type(v) == "table" then
          if not path[v] then
-            flat_into(result, v, deep, path)
+            flat_into(emit, v, deep, path)
          end
       else
-         result[#result + 1] = v
+         emit(v)
       end
    end
 
@@ -515,32 +634,67 @@ local function flat_into(result, items, deep, path)
    end
 
    if deep then
+      local entries = {}
+
       for k, v in pairs(items) do
          local in_array = type(k) == "number" and k >= 1 and k <= n and floor(k) == k
 
          if not in_array then
-            add(v)
+            entries[#entries + 1] = { k, v }
          end
+      end
+
+      if #entries > 1 then
+         -- one context per sort: path is stable while sorting, and the cached
+         -- sequences are only valid for that path
+         local ctx = { path = path, seqs = {} }
+
+         sort(entries, function(x, y)
+            local c = compare(x[1], y[1], ctx)
+
+            if c == 0 then
+               c = compare(x[2], y[2], ctx)
+            end
+
+            return c < 0
+         end)
+      end
+
+      for i = 1, #entries do
+         add(entries[i][2])
       end
    end
 
    path[items] = nil
+end
 
-   return result
+local function appender(result)
+-- emit function that appends to result (nil values are dropped)
+   return function(v)
+      result[#result + 1] = v
+   end
 end
 
 function table.flat(t)
 -- flattens a nested table (over int indices - use table.deepflat instead)
    assert_table("flat", t)
 
-   return flat_into(table(), t, false, {})
+   local result = table()
+   flat_into(appender(result), t, false, {})
+
+   return result
 end
 
 function table.deepflat(t)
--- flattens a nested table over all key-value pairs
+-- flattens a nested table over all key-value pairs: the array part first, then
+-- the other keys in sorted order (numbers, strings, booleans, tables by content,
+-- then other types by identity)
    assert_table("deepflat", t)
 
-   return flat_into(table(), t, true, {})
+   local result = table()
+   flat_into(appender(result), t, true, {})
+
+   return result
 end
 
 function table.flatmap(t, func, ...)
@@ -718,13 +872,12 @@ function table.sample(t)
 end
 
 function table.shuffle(t)
--- mix the values inside the given table
+-- mix the values inside the given table (Fisher-Yates: every ordering is
+-- equally likely)
    assert_table("shuffle", t)
 
-   local len = #t
-
-   for i = 1, len do
-      local k = random(len)
+   for i = #t, 2, -1 do
+      local k = random(i)
       t[i], t[k] = t[k], t[i]
    end
 
@@ -1266,8 +1419,17 @@ function table.new(...)
    return setmetatable(t, mt)
 end
 
+function table.of(...)
+-- creates an enhanched table whose elements are exactly the given arguments.
+-- Unlike table.new, a single table argument becomes the only element
+-- (table.of(t) is { t }), and its own metatable is left alone.
+   return setmetatable({ ... }, mt)
+end
+
 function table.init(size, def, ...)
--- fill the enhanched table with a custom init value or function
+-- fill the enhanched table with a custom init value or function.
+-- a function is called as def(i, ...) for each slot; a table is deep-copied
+-- into each slot (copies are enhanced tables), so slots never share it
    assert_number("init", size)
 
    local t = table()
@@ -1277,7 +1439,12 @@ function table.init(size, def, ...)
       for i = 1, size do
          t[i] = def(i, ...)
       end
-   else        
+   elseif type(def) == "table" then
+      -- a fresh seen per slot: copies share nothing with each other
+      for i = 1, size do
+         t[i] = clone_rec(def, {})
+      end
+   else
       --
       for i = 1, size do
          t[i] = def

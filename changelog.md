@@ -1,6 +1,12 @@
 # Lua-Table Changelog
 
 ## Unreleased
+
+## (0.8.0) 20/11/2026:
+- first stable LuaRocks release (only the scm rock was published before): `luarocks install luatable`
+- CI: GitHub Actions runs busted on Lua 5.1, 5.2, 5.3, 5.4 and LuaJIT 2.1
+- rockspec: requires `lua >= 5.1`; package name is lowercase `luatable`
+- table.info() reports version 0.8.0
 - added a busted unit test suite (`spec/`)
 - fixed group, slide, lshift, rshift and shift on Lua 5.2+ (`unpack` is now `table.unpack`)
 - slide now yields only full windows
@@ -17,6 +23,15 @@
   ancestor, tostring renders them as `<cycle>`, clone and purify reproduce the cycle in the copy
 - clone now keeps shared references shared in the copy (each occurrence used to get its own copy)
 - argument errors now report the caller's file and line instead of a line inside luatable.lua
+- rockspec: added a busted test section (`luarocks test`) and fixed the source URL (git+https)
+- deepflat visits hash keys in a fixed order (numbers, strings, booleans, tables by content,
+  then other types), so its output and deep equal (`equal(a, b, true)`) no longer depend on
+  `pairs` order
+- added table.of(...): always packs its arguments, so `table.of(t)` is `{ t }` (table.new and
+  `table(t)` still wrap a single table in place)
+- init deep-copies a table init value into each slot instead of sharing one table (behaviour
+  change; copies are enhanced tables)
+- shuffle is now uniform (Fisher-Yates); every ordering used to have a different probability
 
 ## (0.7) 16/07/2018:
 - code rewriting: now the library extends the global table object

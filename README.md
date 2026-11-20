@@ -1,19 +1,30 @@
 <p align="center"><img src="logo/vertical.png" alt="lua-table" height="100px"></p>
 
-# Lua-Table 0.7
+# Lua-Table 0.8.0
+[![test](https://github.com/Luca96/lua-table/actions/workflows/test.yml/badge.svg)](https://github.com/Luca96/lua-table/actions/workflows/test.yml)
+
 Lua tables with superpowers :muscle:
+
+Supports Lua 5.1, 5.2, 5.3, 5.4 and LuaJIT 2.1.
 
 ## Changes
 View the ```changelog``` for more info about changes.
 
 ## Installation
-To install the library just ```clone``` the repo or install via [LuaRocks](https://luarocks.org/modules/Luca96/luatable).
+To install the library just ```clone``` the repo or install via [LuaRocks](https://luarocks.org/modules/Luca96/luatable):
+```
+luarocks install luatable
+```
 
 ## Running tests
 The test suite lives in `spec/` and uses [busted](https://lunarmodules.github.io/busted/):
 ```
 luarocks install busted
 busted
+```
+or, through LuaRocks (installs busted first if it is missing):
+```
+luarocks test
 ```
 
 ## Examples
@@ -27,8 +38,14 @@ local t = { 1, 2, 2, 3, -4, 5 }
 -- remove negative values
 t = table.accept(t, table.positive)
 
--- create an enhanched table from an old one
+-- create an enhanched table from an old one (t itself gains the methods, no copy)
 local tb = table(t)
+
+-- table.of always packs its arguments: a single table becomes the only element
+local nested = table.of(t)   --> { t }
+
+-- a table init value is deep-copied into each slot
+local grid = table.init(3, { 0, 0 })
 
 -- print every element
 tb:eachi(print)
@@ -54,6 +71,11 @@ local t2 = { 1, 2, 3, 4, 5 }
 print(table.equal(t1, t2))       --> false
 print(table.equal(t1, t2, true)) --> true
 
+-- deep equality (and deepflat) visit hash keys in a fixed order, not pairs order:
+-- numbers, strings, booleans, then tables (compared by content), then functions,
+-- userdata and threads (by identity, so these keys only line up when both tables
+-- use the same key objects)
+
 -- operator overloads
 local t1 = table { 1, 2, 3 }
 local t2 = table { 2, 4, 5 }
@@ -73,13 +95,6 @@ This section tracks what is still open. Update it when an item is fixed or a new
 - **Dot-access returns library functions.** Enhanced tables use `__index = table`, so `tb.sum` or
   `tb.map` on a table without those keys returns the library function instead of `nil`.
   `get` and `haskey` are not affected; plain indexing is.
-- **Deep equality depends on `pairs` order.** `equal(a, b, true)` compares hash-part values in
-  `pairs` order, so two tables with the same content can compare unequal.
-- **`table.new(t)` wraps in place.** A single table argument is turned into the enhanced table
-  itself (no copy), so `table.new({x})` can't create a one-element table that holds `{x}`.
-- **`init(n, {})` shares one table.** A table init value is stored by reference in every slot.
-- **`shuffle` is biased.** It swaps each slot with a random slot from the whole table, so some
-  orderings are more likely than others; it should use Fisher-Yates.
 
 ### Roadmap
 - **Module instead of global extension.** Today the library adds its functions to Lua's global
@@ -87,6 +102,4 @@ This section tracks what is still open. Update it when an item is fixed or a new
   `__index = table` as a fallback, so `local table = require "luatable"` works as now while the
   global `table` stays untouched, plus an optional `luatable.install()` for the current global
   behaviour. This avoids name clashes with future Lua versions or other libraries.
-- CI running busted on Lua 5.1, 5.4 and LuaJIT.
-- A `test` section in the rockspec, so `luarocks test` runs the suite.
-- Version bump and release once the fixes in the changelog's *Unreleased* section ship.
+- Upload the 0.8.0 rockspec to LuaRocks (tag `v0.8.0` first).

@@ -73,6 +73,72 @@ function helpers.fn(s)
    return function(...) return s(...) end
 end
 
+-- Keys of t in `pairs` order, as one string (to compare iteration orders).
+local function key_order(t)
+   local keys = {}
+
+   for k in next, t do
+      keys[#keys + 1] = tostring(k)
+   end
+
+   return table.concat(keys, ",")
+end
+
+-- Copy of t (keys in the given order) inside a hash part grown by n placeholder keys.
+-- The placeholders are removed afterwards: deleting keys never shrinks a table, so the
+-- copy keeps the bigger hash part. (A constructor with nil fields would presize on
+-- PUC Lua but not on LuaJIT.)
+local function copy_presized(t, keys, n)
+   local copy, placeholders = {}, {}
+
+   for i = 1, n do
+      placeholders[i] = {}
+      copy[placeholders[i]] = true
+   end
+
+   for i = 1, #keys do
+      copy[keys[i]] = t[keys[i]]
+   end
+
+   for i = 1, n do
+      copy[placeholders[i]] = nil
+   end
+
+   return copy
+end
+
+-- Shallow copy of t with the same content but a different `pairs` order. A key's slot
+-- depends on the hash-part size (and on insertion order when keys collide), so this
+-- tries growing hash parts, inserting forwards and backwards, until the order
+-- differs. Fails if none does (use several varied keys so that is practically impossible).
+function helpers.reordered(t)
+   local keys = {}
+
+   for k in next, t do
+      keys[#keys + 1] = k
+   end
+
+   local want = key_order(t)
+
+   local backwards_keys = {}
+
+   for i = 1, #keys do
+      backwards_keys[i] = keys[#keys - i + 1]
+   end
+
+   for size = 0, 10 do
+      for _, order in ipairs({ backwards_keys, keys }) do
+         local copy = copy_presized(t, order, 2 ^ size)
+
+         if key_order(copy) ~= want then
+            return copy
+         end
+      end
+   end
+
+   error("reordered(): could not change the pairs order", 2)
+end
+
 -- Plain, sorted copy of a list; for results that follow the unspecified `pairs` order.
 function helpers.sorted(list)
    local copy = {}
