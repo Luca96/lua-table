@@ -1,10 +1,11 @@
 -----------------------------------------------------------------------------------------
--- lua-table feature tour
+-- lua-table end-to-end regression script (internal; busted only runs *_spec files)
 --
 -- Exercises every public function of the library, prints what each call returns and
--- checks it against the expected value. Run it from anywhere:
+-- checks it against the expected value. Needs only plain `lua`, no busted. Run it from
+-- anywhere:
 --
---    lua examples/demo.lua
+--    lua spec/regression.lua
 --
 -- Each line shows "ok" or "FAIL"; the script exits with status 1 if anything failed.
 -----------------------------------------------------------------------------------------
@@ -390,7 +391,7 @@ local call_line = debug.getinfo(1, "l").currentline + 1   -- the line of the nex
 local ok, msg = pcall(function() table.map(nil, print) end)
 print("        map(nil, print) raised: " .. strip_ansi(msg))
 check("map(nil, f) raises an error",        { ok, msg:find("table.map()", 1, true) ~= nil }, { false, true })
-check("...reported at the caller's line",   { msg:find("demo%.lua:" .. call_line .. ":") ~= nil,
+check("...reported at the caller's line",   { msg:find("regression%.lua:" .. call_line .. ":") ~= nil,
                                               msg:find("luatable.lua", 1, true) ~= nil }, { true, false })
 
 ok, msg = pcall(table.zeros, "three")
