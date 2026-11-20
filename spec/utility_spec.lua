@@ -4,6 +4,24 @@ local plain, is_enhanced, sorted = h.plain, h.is_enhanced, h.sorted
 
 describe("utility", function()
 
+   describe("table.info", function()
+      -- info() prints through a cached `print`, so check its text in the source instead
+      local function read(path)
+         local f = assert(io.open(path, "rb"))
+         local text = f:read("*a")
+         f:close()
+         return text
+      end
+
+      it("reports a version that has a release rockspec", function()
+         local version = read("src/luatable.lua"):match("function table%.info%(%).-version: ([%d.]+)")
+         assert.are.equal("0.8.0", version)
+         local rockspec = read("rockspecs/luatable-" .. version .. "-1.rockspec")
+         assert.are.equal(version .. "-1", rockspec:match('version = "([^"]+)"'))
+         assert.are.equal("v" .. version, rockspec:match('tag = "([^"]+)"'))
+      end)
+   end)
+
    describe("table.purify", function()
       it("keeps array values and hash pairs", function()
          assert.are.same({ 1, 2, x = 3 }, plain(T.purify({ 1, 2, x = 3 })))

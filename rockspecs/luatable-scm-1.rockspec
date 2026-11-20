@@ -1,5 +1,5 @@
 rockspec_format = "3.0"
-package = "LuaTable"
+package = "luatable"
 version = "scm-1"
 
 source = {
@@ -17,7 +17,7 @@ description = {
 }
 
 dependencies = {
-    "lua"
+    "lua >= 5.1"
 }
 
 test_dependencies = {

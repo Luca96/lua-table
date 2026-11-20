@@ -1,13 +1,20 @@
 <p align="center"><img src="logo/vertical.png" alt="lua-table" height="100px"></p>
 
-# Lua-Table 0.7
+# Lua-Table 0.8.0
+[![test](https://github.com/Luca96/lua-table/actions/workflows/test.yml/badge.svg)](https://github.com/Luca96/lua-table/actions/workflows/test.yml)
+
 Lua tables with superpowers :muscle:
+
+Supports Lua 5.1, 5.2, 5.3, 5.4 and LuaJIT 2.1.
 
 ## Changes
 View the ```changelog``` for more info about changes.
 
 ## Installation
-To install the library just ```clone``` the repo or install via [LuaRocks](https://luarocks.org/modules/Luca96/luatable).
+To install the library just ```clone``` the repo or install via [LuaRocks](https://luarocks.org/modules/Luca96/luatable):
+```
+luarocks install luatable
+```
 
 ## Running tests
 The test suite lives in `spec/` and uses [busted](https://lunarmodules.github.io/busted/):
@@ -95,5 +102,4 @@ This section tracks what is still open. Update it when an item is fixed or a new
   `__index = table` as a fallback, so `local table = require "luatable"` works as now while the
   global `table` stays untouched, plus an optional `luatable.install()` for the current global
   behaviour. This avoids name clashes with future Lua versions or other libraries.
-- CI running busted on Lua 5.1, 5.4 and LuaJIT.
-- Version bump and release once the fixes in the changelog's *Unreleased* section ship.
+- Upload the 0.8.0 rockspec to LuaRocks (tag `v0.8.0` first).

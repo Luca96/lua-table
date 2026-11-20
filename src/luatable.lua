@@ -138,7 +138,7 @@ function table.info()
 -- print library info
    print [[
    luatable [
-      version: 0.7,
+      version: 0.8.0,
       author: Luca Anzalone,
       github: https://github.com/Luca96/lua-table
    ]
